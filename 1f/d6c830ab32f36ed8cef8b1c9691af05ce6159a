@@ -1,0 +1,122 @@
+docs/cookie_plan/openshockapi.md
+  ai_agent 1-51
+docs/openshock.dev_api_key_with_shared_shocker.txt
+  ai_agent 1
+docs/plan/models.md
+  ai_agent 1-212
+.pi-lens/metrics-history.json
+  ai_agent 1-81
+docs/plan/errors.md
+  ai_agent 1-85
+src/pyshock/cli/main.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 30,94,205,333,440
+docs/plan/cli-interactive.md
+  ai_agent 1-472
+src/pyshock/__init__.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 26-28,43
+docs/plan/overview.md
+  ai_agent 1-156
+.pi-lens/reviews/booboo-2026-05-08T10-10-18.md
+  ai_agent 1-246
+docs/plan/rename.md
+  ai_agent 1-35
+docs/plan/config.md
+  ai_agent 1-56
+.pi-lens/cache/knip.meta.json
+  ai_agent 1-3
+.pi-lens/cache/jscpd.meta.json
+  ai_agent 1-3
+.pi-lens/cache/todo-baseline.meta.json
+  ai_agent 1-3
+docs/cookie_plan/README.md
+  ai_agent 1-55
+.pi-lens/worklog.jsonl
+  ai_agent 1
+docs/pishock_v1_api.json
+  ai_agent 1-2713
+src/pyshock/pishockapi.py
+  s_339db1e0dd0506::t_9545b0cba8b8ea 277,288-289,292-293
+docs/plan/checklist.md
+  ai_agent 1-92
+.pi-lens/reports/lint-action-plan-2026-05-08.md
+  ai_agent 1-264
+docs/plan/operations.md
+  ai_agent 1-40
+.pi-lens/cache/todo-baseline.json
+  ai_agent 1-3
+docs/cookie_plan/cli.md
+  ai_agent 1-119
+docs/plan/exports.md
+  ai_agent 1-40
+docs/cookie_plan/utils.md
+  ai_agent 1-38
+docs/plan/openshockapi.md
+  ai_agent 1-343
+docs/openshock.dev_api-key.txt
+  ai_agent 1
+tests/test_openshockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 20
+.pi-lens/cache/typescript-rules-v1.json
+  ai_agent 1-447
+.pi-lens/turn-state.json
+  ai_agent 1-6
+src/pyshock/cli/utils.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 15,71
+src/pyshock/errors.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 18
+.pi-lens/cache/session-start-guidance.json
+  ai_agent 1
+docs/cookie_plan/kickoff.md
+  ai_agent 1-28
+.pi-lens/cache/jscpd.json
+  ai_agent 1-176
+src/pyshock/models/shocker.py
+  s_339db1e0dd0506::t_cbe2e39b0317a3 248
+  s_339db1e0dd0506::t_0597b05c54a2b5 196
+  s_339db1e0dd0506::t_b826fe83a79027 24,42-45
+docs/cookie_plan/tests.md
+  ai_agent 1-91
+docs/plan/account.md
+  ai_agent 1-68
+docs/plan/cli.md
+  ai_agent 1-54
+docs/cookie_plan/checklist.md
+  ai_agent 1-107
+docs/cookie_plan/display.md
+  ai_agent 1-62
+.pi-lens/cache/session-start-guidance.meta.json
+  ai_agent 1-3
+.pi-lens/reviews/booboo-2026-05-08T10-10-18.json
+  ai_agent 1-167
+.pi-lens/cache/python-rules-v1.json
+  ai_agent 1-531
+tests/test_pishockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 24
+docs/plans/browser-detection.md
+  ai_agent 1-66
+docs/cookie_plan/config.md
+  ai_agent 1-69
+docs/plans/init-decomposition.md
+  ai_agent 1-80
+.pi-lens/cache/knip.json
+  ai_agent 1-9
+src/pyshock/openshockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 265,267
+  s_339db1e0dd0506::t_f796d2621ce95d 275-278
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "1fd6c830ab32f36ed8cef8b1c9691af05ce6159a",
+  "prompts": {},
+  "sessions": {
+    "s_339db1e0dd0506": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e0745-17dc-750b-929c-7402a372a499",
+        "model": "Qwen 3.6 27B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
