@@ -1,0 +1,111 @@
+docs/plan/operations.md
+  ai_agent 1-40
+docs/cookie_plan/config.md
+  ai_agent 1-69
+docs/plans/browser-detection.md
+  ai_agent 1-66
+docs/cookie_plan/openshockapi.md
+  ai_agent 1-51
+src/pyshock/cli/main.py
+  ai_agent 30,94,205,333,440
+src/pyshock/cli/utils.py
+  ai_agent 15,71
+.pi-lens/cache/session-start-guidance.json
+  ai_agent 1
+.pi-lens/cache/session-start-guidance.meta.json
+  ai_agent 1-3
+.pi-lens/cache/todo-baseline.json
+  ai_agent 1-3
+.pi-lens/metrics-history.json
+  ai_agent 1-81
+src/pyshock/openshockapi.py
+  ai_agent 265,267,275-278
+.pi-lens/reviews/booboo-2026-05-08T10-10-18.md
+  ai_agent 1-246
+.pi-lens/worklog.jsonl
+  ai_agent 1
+tests/test_pishockapi.py
+  ai_agent 24
+.pi-lens/turn-state.json
+  ai_agent 1-6
+.pi-lens/cache/knip.json
+  ai_agent 1-9
+docs/cookie_plan/checklist.md
+  ai_agent 1-107
+docs/cookie_plan/display.md
+  ai_agent 1-62
+docs/cookie_plan/kickoff.md
+  ai_agent 1-28
+.pi-lens/cache/typescript-rules-v1.json
+  ai_agent 1-447
+docs/plan/overview.md
+  ai_agent 1-156
+docs/openshock.dev_api_key_with_shared_shocker.txt
+  ai_agent 1
+docs/cookie_plan/tests.md
+  ai_agent 1-91
+docs/plan/exports.md
+  ai_agent 1-40
+docs/plan/openshockapi.md
+  ai_agent 1-343
+docs/plan/checklist.md
+  ai_agent 1-92
+src/pyshock/models/shocker.py
+  ai_agent 24,42-45,196,248
+.pi-lens/reports/lint-action-plan-2026-05-08.md
+  ai_agent 1-264
+docs/cookie_plan/cli.md
+  ai_agent 1-119
+docs/cookie_plan/utils.md
+  ai_agent 1-38
+.gitmodules
+  ai_agent 1-3
+docs/plan/cli-interactive.md
+  ai_agent 1-472
+docs/plan/cli.md
+  ai_agent 1-54
+docs/plan/errors.md
+  ai_agent 1-85
+docs/openshock.dev_api-key.txt
+  ai_agent 1
+.pi-lens/reviews/booboo-2026-05-08T10-10-18.json
+  ai_agent 1-167
+src/pyshock/__init__.py
+  ai_agent 26-28,43
+src/pyshock/errors.py
+  ai_agent 18
+src/pyshock/pishockapi.py
+  ai_agent 277,288-289,292-293
+tests/test_openshockapi.py
+  ai_agent 20
+docs/cookie_plan/README.md
+  ai_agent 1-55
+docs/plan/models.md
+  ai_agent 1-212
+docs/plan/account.md
+  ai_agent 1-68
+.pi-lens/cache/todo-baseline.meta.json
+  ai_agent 1-3
+.pi-lens/cache/knip.meta.json
+  ai_agent 1-3
+docs/plans/init-decomposition.md
+  ai_agent 1-80
+docs/plan/config.md
+  ai_agent 1-56
+.pi-lens/cache/jscpd.meta.json
+  ai_agent 1-3
+.pi-lens/cache/jscpd.json
+  ai_agent 1-176
+.pi-lens/cache/python-rules-v1.json
+  ai_agent 1-531
+docs/pishock_v1_api.json
+  ai_agent 1-2713
+docs/plan/rename.md
+  ai_agent 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "0fdea8432d993ed12be848a7bc1be24450095cfb",
+  "prompts": {}
+}
