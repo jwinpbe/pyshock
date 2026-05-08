@@ -1,0 +1,38 @@
+src/pyshock/pishockapi.py
+  s_339db1e0dd0506::t_9545b0cba8b8ea 277,288-289,292-293
+src/pyshock/models/shocker.py
+  s_339db1e0dd0506::t_cbe2e39b0317a3 248
+  s_339db1e0dd0506::t_0597b05c54a2b5 196
+  s_339db1e0dd0506::t_b826fe83a79027 24,42-45
+tests/test_openshockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 20
+src/pyshock/__init__.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 26-28,43
+tests/test_pishockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 24
+src/pyshock/openshockapi.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 265,267
+  s_339db1e0dd0506::t_f796d2621ce95d 275-278
+src/pyshock/cli/main.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 30,94,205,333,440
+src/pyshock/errors.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 18
+src/pyshock/cli/utils.py
+  s_339db1e0dd0506::t_ad64f29eff5cef 15,71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "a4e8603a129fb0df2abef905e007fec277767c18",
+  "prompts": {},
+  "sessions": {
+    "s_339db1e0dd0506": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e0745-17dc-750b-929c-7402a372a499",
+        "model": "Qwen 3.6 27B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
