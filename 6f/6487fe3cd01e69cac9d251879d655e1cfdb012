@@ -1,0 +1,22 @@
+src/pyshock/models/shocker.py
+  s_339db1e0dd0506::t_89baee6793ce7c 41-47
+tests/test_openshockapi.py
+  s_339db1e0dd0506::t_eb5b6302ee35a5 309
+  s_339db1e0dd0506::t_b2ba6cb903e1a9 306-308,312-315
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "6f6487fe3cd01e69cac9d251879d655e1cfdb012",
+  "prompts": {},
+  "sessions": {
+    "s_339db1e0dd0506": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e0745-17dc-750b-929c-7402a372a499",
+        "model": "Qwen 3.6 27B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
