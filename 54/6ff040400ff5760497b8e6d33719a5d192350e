@@ -1,0 +1,30 @@
+pyproject.toml
+  s_03758ea334b778::t_d067cb54b04cd5 92
+  s_03758ea334b778::t_db78a75c1fc5c2 97-99
+  s_03758ea334b778::t_6e8e8f2acdabb7 59-71,79-83
+  s_339db1e0dd0506::t_29bfa99cad3021 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "546ff040400ff5760497b8e6d33719a5d192350e",
+  "prompts": {},
+  "sessions": {
+    "s_03758ea334b778": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e04f8-eb1f-76be-998b-526882489475",
+        "model": "Gemma 4 31B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    },
+    "s_339db1e0dd0506": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e0745-17dc-750b-929c-7402a372a499",
+        "model": "Qwen 3.6 27B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
