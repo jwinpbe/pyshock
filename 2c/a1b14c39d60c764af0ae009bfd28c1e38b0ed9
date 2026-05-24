@@ -1,0 +1,47 @@
+tests/cli/test_init_helpers.py
+  s_e8b8da4e66c35e::t_5d46ae2c96d960 85,89,92-93,96-97,106,114,117,123
+tests/test_config.py
+  s_e8b8da4e66c35e::t_e3042456d1867b 249,262,270,280,284,288,294
+  s_e8b8da4e66c35e::t_d95452aea5db77 306
+  s_e8b8da4e66c35e::t_e5d6b086ca133e 162
+  s_e8b8da4e66c35e::t_db3000fa671c6a 229,231
+  s_e8b8da4e66c35e::t_e700d0c2f04051 367
+  s_e8b8da4e66c35e::t_5fafc0b1206e75 144
+  s_e8b8da4e66c35e::t_e3979eecc960a5 200
+src/pyshock/cli/commands/init_creds.py
+  s_e8b8da4e66c35e::t_993d2c7c161ecb 151,161,166
+  s_e8b8da4e66c35e::t_368221b9f89ae9 198
+  s_e8b8da4e66c35e::t_2693aa563515ec 45,50
+  s_e8b8da4e66c35e::t_8c8f464ed133c8 163
+src/pyshock/cli/display.py
+  s_e8b8da4e66c35e::t_3f8f00a83a2367 440
+  s_e8b8da4e66c35e::t_1b135371efb723 445
+src/pyshock/cli/commands/meta.py
+  s_e8b8da4e66c35e::t_39efa82e91cc93 69
+  s_e8b8da4e66c35e::t_4711089677f2e9 86
+  s_e8b8da4e66c35e::t_c17631625125bb 41-42
+  s_e8b8da4e66c35e::t_7f1ef6ac52fc23 96
+  s_e8b8da4e66c35e::t_ead981d04f9d9f 215-216
+  s_e8b8da4e66c35e::t_fcafdd377cf738 120
+README.md
+  s_e8b8da4e66c35e::t_cc90dae4bed15b 61
+  s_e8b8da4e66c35e::t_7dc4f7e09d1e03 73
+tests/test_utils_multi.py
+  s_e8b8da4e66c35e::t_a35cebc9675f17 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "2ca1b14c39d60c764af0ae009bfd28c1e38b0ed9",
+  "prompts": {},
+  "sessions": {
+    "s_e8b8da4e66c35e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1a692b22cffeOXqJWxgXXh0VEL",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
