@@ -1,0 +1,20 @@
+README.md
+  s_e8b8da4e66c35e::t_fa851e35f38d27 61
+  s_e8b8da4e66c35e::t_9dc8f9c14aebc7 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "aa9573832a9cedb1fb3ef57b8ba38459bcaa9d75",
+  "prompts": {},
+  "sessions": {
+    "s_e8b8da4e66c35e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1a692b22cffeOXqJWxgXXh0VEL",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
