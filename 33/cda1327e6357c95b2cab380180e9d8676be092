@@ -1,0 +1,22 @@
+src/pyshock/openshockapi.py
+  s_6c5ef4d52c5663::t_94ccbb1ac473dc 138,143-148,157
+  s_6c5ef4d52c5663::t_bc7c187297c9a3 10,32-33
+  s_6c5ef4d52c5663::t_caca6205d17cde 225
+  s_6c5ef4d52c5663::t_09aee38db3f3c4 102,107,112,115,118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "33cda1327e6357c95b2cab380180e9d8676be092",
+  "prompts": {},
+  "sessions": {
+    "s_6c5ef4d52c5663": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_18ad942d8ffenSCYfdsIEjJGa5",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
