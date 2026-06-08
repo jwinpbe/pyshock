@@ -1,0 +1,81 @@
+src/pyshock/cli/main.py
+  s_6c5ef4d52c5663::t_f1cdb981ad51a1 103-105
+  s_ff69c611897a72::t_8dbfac1ca2f4e5 62-64
+  s_6c5ef4d52c5663::t_0c1471d677f0e0 65-68
+  s_6c5ef4d52c5663::t_0adb834f3e727c 69,71
+  s_ff69c611897a72::t_cda5eb7c19d427 70
+  s_6c5ef4d52c5663::t_d7d8e49df25e2a 7,14,76
+  s_ff69c611897a72::t_24599c2a2f0bee 10
+src/pyshock/cli/commands/init_creds.py
+  s_6c5ef4d52c5663::t_7e9f6392cd23c9 36,44-45
+  s_6c5ef4d52c5663::t_3fe5cfd1821cc8 14
+  s_6c5ef4d52c5663::t_b2d8d4d8c5c1d6 43
+src/pyshock/cli/commands/meta.py
+  s_6c5ef4d52c5663::t_0d64f65b75638d 30
+  s_6c5ef4d52c5663::t_44b0a161c94c42 37,54,63,65,68-70,74,76,79,92,96,98,280,292,300,312
+  s_02d93313923f59::t_c4de25f5cb9c4d 164
+tests/cli/test_init_helpers.py
+  s_6c5ef4d52c5663::t_4f653031005233 79-80,105-106
+src/pyshock/cli/utils.py
+  s_6c5ef4d52c5663::t_e68cf983d68daa 202
+  s_02d93313923f59::t_86ec91178a3419 270-271,274-275
+  s_6c5ef4d52c5663::t_16183c5022dcf0 44-45,47,61
+  s_02d93313923f59::t_c0c30ce269e472 134,152
+  s_6c5ef4d52c5663::t_c25c601ac680d5 29
+  s_02d93313923f59::t_09ba2322eb17ab 68,71
+  s_02d93313923f59::t_24bb6c85c13e01 83
+src/pyshock/models/__init__.py
+  s_6c5ef4d52c5663::t_94a58eec34e535 4
+tests/test_utils_multi.py
+  s_6c5ef4d52c5663::t_87248449727298 25,31
+src/pyshock/__init__.py
+  s_6c5ef4d52c5663::t_5542f7a227f2a1 23,57
+  s_6c5ef4d52c5663::t_1b2ce4de0056be 26
+src/pyshock/cli/display.py
+  s_6c5ef4d52c5663::t_bd37261ad9c0ea 376,379
+  s_6c5ef4d52c5663::t_f49474da701c27 434-436
+src/pyshock/cli/commands/code.py
+  s_c0220caf3fe59d::t_b1e3e403b9a251 53
+  s_6c5ef4d52c5663::t_4468a04c5ed842 21,27
+  s_c0220caf3fe59d::t_928263a91fc863 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "53a4f342ad948422336f71a80ca54919231f6600",
+  "prompts": {},
+  "sessions": {
+    "s_02d93313923f59": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_17ecbce1affeXI5v9931hVRXDk",
+        "model": "Qwen 3.6 35B A3B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    },
+    "s_6c5ef4d52c5663": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_18ad942d8ffenSCYfdsIEjJGa5",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    },
+    "s_c0220caf3fe59d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_17ed2cb1fffe8cjYXOBynx2HJL",
+        "model": "Qwen 3.6 35B A3B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    },
+    "s_ff69c611897a72": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_18aa9939bffeLrX27m3Z8TL5Ta",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
