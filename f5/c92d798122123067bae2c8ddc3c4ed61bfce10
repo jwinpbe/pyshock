@@ -1,0 +1,39 @@
+tests/test_config.py
+  s_35337d926e21f1::t_d9c17b32962fd1 193
+  s_35337d926e21f1::t_74e11acddfc966 166-167
+  s_35337d926e21f1::t_371aeff1b20739 331
+src/pyshock/cli/config.py
+  s_35337d926e21f1::t_367129ed43af89 180
+  s_35337d926e21f1::t_572bb2ea7e8acb 28-30
+  s_35337d926e21f1::t_8e9341605c5518 156
+  s_35337d926e21f1::t_abf7ecfeefc709 125-132
+  s_35337d926e21f1::t_616a8e77eb3c08 119,123
+  s_6c5ef4d52c5663::t_00ced842ec8e23 141
+  s_35337d926e21f1::t_56947af8f9bd5f 74
+  s_35337d926e21f1::t_bb324f2d3d6833 163
+  s_35337d926e21f1::t_92b88fa4956bd7 86,90-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "f5c92d798122123067bae2c8ddc3c4ed61bfce10",
+  "prompts": {},
+  "sessions": {
+    "s_35337d926e21f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_17e570ef3ffei2PnlAU5UszpOo",
+        "model": "Qwen 3.6 35B A3B"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    },
+    "s_6c5ef4d52c5663": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_18ad942d8ffenSCYfdsIEjJGa5",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
