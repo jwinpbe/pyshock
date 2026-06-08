@@ -1,0 +1,20 @@
+pyproject.toml
+  s_6c5ef4d52c5663::t_7140490be658ab 39
+  s_6c5ef4d52c5663::t_5493a03f691377 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "065e46dec6c5c080213d2d33839002c8be035650",
+  "prompts": {},
+  "sessions": {
+    "s_6c5ef4d52c5663": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_18ad942d8ffenSCYfdsIEjJGa5",
+        "model": "deepseek-v4-flash-free"
+      },
+      "human_author": "jwinpbe <jwin_pbe@proton.me>"
+    }
+  }
+}
