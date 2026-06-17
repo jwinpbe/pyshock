@@ -1,0 +1,20 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - run: uv sync --all-extras
+      - run: uv run pytest --cov=pyshock --cov-report=term-missing
+      - run: uv build
+      - run: uv publish

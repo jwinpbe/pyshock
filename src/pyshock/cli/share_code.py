@@ -1,0 +1,62 @@
+"""Share code management CLI commands."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pyshock.cli.display import console, render_compact_code_table, render_full_code_table
+from pyshock.errors import CliError
+
+if TYPE_CHECKING:
+    from pyshock.models.shocker import Shocker
+    from pyshock.pishockapi import PiShockAPI
+
+
+def code_add(code: str, api: PiShockAPI) -> None:
+    """Claim a share code.
+
+    Args:
+        code: Share code string.
+        api: API client.
+
+    Raises:
+        CliError: If the code is empty.
+    """
+    if not code or not code.strip():
+        raise CliError("Share code cannot be empty.")
+
+    with console.status("Adding share code...", spinner="bouncingBar"):
+        api.add_share_code(code.strip())
+    console.print(f"Share code '[bold]{code}[/bold]' added successfully.")
+
+
+def code_delete(share_code: str, api: PiShockAPI) -> None:
+    """Remove a share code.
+
+    Args:
+        share_code: Share code string.
+        api: API client.
+    """
+    with console.status("Deleting share code...", spinner="bouncingBar"):
+        api.delete_share(share_code)
+    console.print(f"Share code '[bold]{share_code}[/bold]' deleted successfully.")
+
+
+def code_list(*, show_info: bool, shockers: list[Shocker]) -> None:
+    """List shared shockers.
+
+    Args:
+        show_info: Show additional shocker details.
+        shockers: Pre-fetched list of shockers to filter and display.
+    """
+    shared = [s for s in shockers if s.is_shared]
+
+    if not shared:
+        console.print("No share codes found.")
+        return
+
+    console.print()
+    if show_info:
+        render_full_code_table(shared)
+    else:
+        render_compact_code_table(shared)
