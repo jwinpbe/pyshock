@@ -14,8 +14,6 @@ from pyshock.cli.share_code import code_add, code_delete, code_list
 from pyshock.errors import CliError
 from pyshock.models.shocker import Shocker
 
-# -- Shared shocker fixtures --
-
 _SHARED_SHOCKER = Shocker(
     shocker_id="shared123",
     name="Shared Shocker",
@@ -45,7 +43,7 @@ _NON_SHARED_SHOCKER = Shocker(
     max_duration=15000,
     is_v3=True,
     can_pause=True,
-    hub_id=1,
+    pishock_hub_id=1,
 )
 
 

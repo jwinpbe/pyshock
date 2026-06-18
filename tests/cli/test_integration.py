@@ -55,7 +55,7 @@ def config_with_account() -> Config:
                         "max_duration": 15000,
                         "is_v3": True,
                         "can_pause": True,
-                        "hub_id": 1,
+                        "pishock_hub_id": 1,
                     }
                 ],
             }

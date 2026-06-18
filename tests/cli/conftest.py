@@ -20,9 +20,6 @@ from pyshock.cli.config import Config
 from pyshock.cli.context import _current_account_id, json_mode
 from pyshock.pishockapi import PiShockAPI
 
-# -- Console --
-
-
 @pytest.fixture
 def console() -> Console:
     """Deterministic Rich console for capturing output in tests."""
@@ -33,9 +30,6 @@ def console() -> Console:
         color_system=None,
         legacy_windows=False,
     )
-
-
-# -- App --
 
 
 @pytest.fixture
@@ -62,9 +56,6 @@ def app(console: Console) -> Generator[App]:
 
     real_app.console = old_console
     real_app.result_action = old_result_action
-
-
-# -- Parse assertion helper --
 
 
 @pytest.fixture
@@ -121,16 +112,10 @@ def assert_parse_args(app: App) -> Callable[..., tuple]:
     return _assert
 
 
-# -- Execution trace queue --
-
-
 @pytest.fixture
 def queue() -> list:
     """Bare list appended to by mocked handlers to trace execution order."""
     return []
-
-
-# -- Mock PiShock API --
 
 
 @pytest.fixture
@@ -144,9 +129,6 @@ def mock_pishock_api() -> MagicMock:
     mock.__enter__ = MagicMock(return_value=mock)
     mock.__exit__ = MagicMock(return_value=False)
     return mock
-
-
-# -- Mock Config --
 
 
 @pytest.fixture
@@ -170,7 +152,7 @@ def mock_config() -> Config:
                         "max_duration": 15000,
                         "is_v3": True,
                         "can_pause": True,
-                        "hub_id": 1,
+                        "pishock_hub_id": 1,
                     }
                 ],
             }
@@ -179,9 +161,6 @@ def mock_config() -> Config:
         "confirmations": {"shock": False, "vibrate": False, "beep": False},
     }
     return config
-
-
-# -- Shared test data --
 
 
 @pytest.fixture
@@ -200,11 +179,8 @@ def test_shocker() -> Shocker:
         max_duration=15000,
         is_v3=True,
         can_pause=True,
-        hub_id=1,
+        pishock_hub_id=1,
     )
-
-
-# -- sys.argv patch --
 
 
 @pytest.fixture(autouse=True)
@@ -214,9 +190,6 @@ def patch_sys_argv() -> Generator[None]:
     sys.argv = ["pyshock"]
     yield
     sys.argv = old_argv
-
-
-# -- Context var reset --
 
 
 @pytest.fixture(autouse=True)
@@ -231,9 +204,6 @@ def _reset_context_vars() -> Generator[None]:
     json_mode.set(False)
     _current_account_id.set("")
     reset_config_cache()
-
-
-# -- Config with account (patched) --
 
 
 @pytest.fixture

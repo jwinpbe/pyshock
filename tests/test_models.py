@@ -26,7 +26,7 @@ class TestShocker:
 
         shocker = Shocker.from_api(data)
 
-        assert shocker.hub_id == 1
+        assert shocker.pishock_hub_id == 1
         assert shocker.shocker_id == "2"
         assert shocker.name == "Test Shocker"
         assert shocker.is_v3 is True
@@ -77,7 +77,7 @@ class TestShocker:
         assert shocker.is_v3 is True
         assert shocker.is_shared is True
         assert shocker.is_owned is False
-        assert shocker.hub_id is None
+        assert shocker.pishock_hub_id is None
 
     def test_from_api_shared_missing_keys(self) -> None:
         with pytest.raises(ValueError, match="missing API fields"):
@@ -115,7 +115,7 @@ class TestShocker:
             can_hold=True,
             max_duration=1000,
             max_intensity=50,
-            hub_id=1,
+            pishock_hub_id=1,
         )
         assert str(shocker) == "My Shocker (id=1)"
 
@@ -192,7 +192,7 @@ class TestShocker:
         assert shocker.max_duration == 10000
         assert shocker.paused is False
         assert shocker.owned_by == "owner123"
-        assert shocker.owner_uuid == "owner-uuid"
+        assert shocker.shared_by == "owner-uuid"
         assert shocker.owner_image == "https://gravatar.com/test"
         assert shocker.device_id is None
         assert shocker.is_shared is True

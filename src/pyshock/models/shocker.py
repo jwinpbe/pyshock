@@ -21,7 +21,7 @@ class Shocker:
     can_hold: bool
     max_intensity: int
     max_duration: int
-    hub_id: int | None = None
+    pishock_hub_id: int | None = None
     device_id: str | None = None
     share_code: str | None = None
     owned_by: str | None = None
@@ -32,7 +32,7 @@ class Shocker:
     share_id: int | None = None
     owner_id: int | None = None
     client_id: int | None = None
-    owner_uuid: str | None = None
+    shared_by: str | None = None
     owner_image: str | None = None
     model: str | None = None
     rf_id: int | None = None
@@ -40,20 +40,19 @@ class Shocker:
 
     @property
     def is_owned(self) -> bool:
-        # PiShock owned: hub_id is set.
-        # OpenShock owned: device_id is set, owner_uuid is None.
-        # OpenShock shared: device_id is set, owner_uuid is also set.
-        # PiShock shared: neither hub_id nor device_id is set.
-        return self.hub_id is not None or (self.device_id is not None and self.owner_uuid is None)
+        is_pishock = self.pishock_hub_id is not None
+        is_openshock = self.device_id is not None
+        is_shared = self.shared_by is not None
+        return is_pishock or (is_openshock and not is_shared)
 
     @property
     def is_shared(self) -> bool:
         """Return True if this shocker is shared with the account.
 
         PiShock shared shockers have a share_code.
-        OpenShock shared shockers have an owner_uuid.
+        OpenShock shared shockers have a shared_by.
         """
-        return self.share_code is not None or self.owner_uuid is not None
+        return self.share_code is not None or self.shared_by is not None
 
     def __repr__(self) -> str:
         return f"Shocker({self.name!r}, id={self.shocker_id!r})"
@@ -155,7 +154,7 @@ class Shocker:
             result.update({
                 "shocker_id": str(data["ShockerId"]),
                 "can_hold": data.get("CanHold", False),
-                "hub_id": data["HubId"],
+                "pishock_hub_id": data["HubId"],
             })
 
         return result
@@ -244,7 +243,7 @@ class Shocker:
             max_duration=limits.get("duration") if limits.get("duration") is not None else OPENSHOCK_MAX_DURATION_MS,
             paused=data["isPaused"],
             owned_by=owner_info.get("name"),
-            owner_uuid=owner_info.get("id"),
+            shared_by=owner_info.get("id"),
             owner_image=owner_info.get("image"),
             device_id=device_id,
         )

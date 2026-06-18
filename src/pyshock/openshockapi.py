@@ -339,7 +339,7 @@ class OpenShockAPI:
                     ),
                     paused=bool(share.get("paused", 0)),
                     owned_by=owner_info.get("name"),
-                    owner_uuid=owner_info.get("id"),
+                    shared_by=owner_info.get("id"),
                     owner_image=owner_info.get("image"),
                 )
                 result.append(shocker)
@@ -390,14 +390,12 @@ Response received:
 
         result: dict[str, Shocker] = {}
 
-        # Parse owned: data is DeviceWithShockersResponse[]
         for device in owned_raw:
             device_id = device.get("id")
             for shocker in device.get("shockers", []):
                 shocker_obj = Shocker.from_openshock_owned(shocker, device_id=device_id)
                 result[shocker_obj.shocker_id] = shocker_obj
 
-        # Parse shared: data is OwnerShockerResponse[]
         for owner in shared_raw:
             owner_info = {
                 "name": owner.get("name"),

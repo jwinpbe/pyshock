@@ -25,7 +25,7 @@ test_shocker = Shocker(
     max_duration=15000,
     is_v3=True,
     can_pause=True,
-    hub_id=1,
+    pishock_hub_id=1,
 )
 
 
@@ -105,7 +105,7 @@ class TestAuth:
                         "max_duration": 15000,
                         "is_v3": True,
                         "can_pause": True,
-                        "hub_id": 1,
+                        "pishock_hub_id": 1,
                     }
                 ],
             }
