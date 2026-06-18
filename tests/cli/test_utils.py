@@ -12,6 +12,7 @@ from pyshock.cli.utils import (
     _current_api_client,
     confirm_operation,
     get_api,
+    get_api_for_account,
     resolve_shocker_id,
     send_operation,
     set_api_client,
@@ -20,6 +21,8 @@ from pyshock.cli.utils import (
 from pyshock.errors import CliError
 from pyshock.models.operation import ShockerOperation
 from pyshock.models.shocker import Shocker
+from pyshock.openshockapi import OpenShockAPI
+from pyshock.pishockapi import PiShockAPI
 
 
 class TestValidateDuration:
@@ -226,3 +229,80 @@ class TestConfirmOperation:
             with pytest.raises(SystemExit) as exc_info:
                 confirm_operation("shock")
             assert exc_info.value.code == 0
+
+
+class TestGetApiForAccount:
+    """Tests for get_api_for_account."""
+
+    def _make_config(self, accounts: dict) -> Config:
+        config = Config()
+        config._data["accounts"] = accounts
+        return config
+
+    def test_get_pishock_api(self) -> None:
+        """PiShock account returns PiShockAPI instance."""
+        config = self._make_config({
+            "pishock_1": {"provider": "pishock", "api_key": "test_key"},
+        })
+        with patch("pyshock.cli.utils.get_config", return_value=config):
+            api = get_api_for_account("pishock_1")
+        assert isinstance(api, PiShockAPI)
+
+    def test_get_openshock_api(self) -> None:
+        """OpenShock account returns OpenShockAPI instance."""
+        config = self._make_config({
+            "openshock_1": {"provider": "openshock", "api_token": "test_token"},
+        })
+        with patch("pyshock.cli.utils.get_config", return_value=config):
+            api = get_api_for_account("openshock_1")
+        assert isinstance(api, OpenShockAPI)
+
+    def test_get_openshock_missing_token_raises(self) -> None:
+        """OpenShock account without api_token raises CliError."""
+        config = self._make_config({
+            "openshock_1": {"provider": "openshock"},
+        })
+        with (
+            patch("pyshock.cli.utils.get_config", return_value=config),
+            pytest.raises(CliError, match="missing OpenShock API token"),
+        ):
+            get_api_for_account("openshock_1")
+
+    def test_unknown_provider_raises(self) -> None:
+        """Unknown provider raises CliError."""
+        config = self._make_config({
+            "weird_1": {"provider": "weird"},
+        })
+        with (
+            patch("pyshock.cli.utils.get_config", return_value=config),
+            pytest.raises(CliError, match="Unknown provider"),
+        ):
+            get_api_for_account("weird_1")
+
+
+class TestValidateOperationParamsProvider:
+    """Tests for provider-aware duration validation."""
+
+    def test_pishock_duration_range(self) -> None:
+        """PiShock: 100-15000ms accepted, outside rejected."""
+        assert validate_operation_params(100, 50, "pishock") == 100
+        assert validate_operation_params(15000, 50, "pishock") == 15000
+        with pytest.raises(CliError):
+            validate_operation_params(99, 50, "pishock")
+        with pytest.raises(CliError):
+            validate_operation_params(15001, 50, "pishock")
+
+    def test_openshock_duration_range(self) -> None:
+        """OpenShock: 300-65535ms accepted, outside rejected."""
+        assert validate_operation_params(300, 50, "openshock") == 300
+        assert validate_operation_params(65535, 50, "openshock") == 65535
+        with pytest.raises(CliError):
+            validate_operation_params(299, 50, "openshock")
+        with pytest.raises(CliError):
+            validate_operation_params(65536, 50, "openshock")
+
+    def test_default_provider_is_pishock(self) -> None:
+        """When provider is not specified, defaults to pishock range."""
+        assert validate_operation_params(100, 50) == 100
+        with pytest.raises(CliError):
+            validate_operation_params(99, 50)

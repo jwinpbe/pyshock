@@ -17,8 +17,6 @@ from pyshock.cli.commands.code import add, delete, list_codes
 from pyshock.cli.commands.meta import auth, confirm, devices, logout, verify
 from pyshock.cli.commands.shocker import beep, info, shock, vibrate
 
-# -- Shocker command parse tests --
-
 
 def test_shock_parse_positional(assert_parse_args: Callable[..., tuple]) -> None:
     """Positional duration and intensity bind correctly."""
@@ -94,9 +92,6 @@ def test_info_parse(assert_parse_args: Callable[..., tuple]) -> None:
     )
 
 
-# -- Meta command parse tests --
-
-
 def test_devices_parse(assert_parse_args: Callable[..., tuple]) -> None:
     """Devices has no args."""
     assert_parse_args(
@@ -147,9 +142,6 @@ def test_confirm_parse(assert_parse_args: Callable[..., tuple]) -> None:
     )
 
 
-# -- Code sub-app parse tests --
-
-
 def test_code_add_parse(assert_parse_args: Callable[..., tuple]) -> None:
     """Code add with share code."""
     assert_parse_args(
@@ -188,9 +180,6 @@ def test_code_list_with_info_parse(assert_parse_args: Callable[..., tuple]) -> N
         expected_args=(),
         expected_kwargs={"show_info": True},
     )
-
-
-# -- Error cases --
 
 
 def test_unknown_command(app) -> None:  # type: ignore[no-untyped-def]

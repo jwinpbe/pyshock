@@ -10,6 +10,7 @@ from pyshock.cli.config import Config
 from pyshock.errors import NotAuthorizedError
 from pyshock.models.account import AccountInfo
 from pyshock.models.shocker import Shocker
+from pyshock.openshockapi import OpenShockAPI
 from pyshock.pishockapi import PiShockAPI
 
 test_account = AccountInfo(user_id="12345", username="testuser")
@@ -28,6 +29,9 @@ test_shocker = Shocker(
     pishock_hub_id=1,
 )
 
+PISHOCK_UUID = "550e8400-e29b-41d4-a716-446655440000"
+OPENSHOCK_TOKEN = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678901"  # 64 chars
+
 
 class TestAuth:
     """Tests for the auth command."""
@@ -44,8 +48,9 @@ class TestAuth:
         get_account_return: AccountInfo = test_account,
         list_shockers_return: list[Shocker] | None = None,
         get_account_side_effect: Exception | None = None,
+        spec: type = PiShockAPI,
     ) -> MagicMock:
-        mock = MagicMock(spec=PiShockAPI)
+        mock = MagicMock(spec=spec)
         mock.__enter__ = MagicMock(return_value=mock)
         mock.__exit__ = MagicMock(return_value=False)
         if get_account_side_effect is not None:
@@ -57,10 +62,10 @@ class TestAuth:
         )
         return mock
 
-    def test_new_account_with_api_key_flag(
+    def test_new_account_with_key_flag(
         self,
     ) -> None:
-        """api_key via flag creates new account, fetches shockers, auto-generates pishock_1."""
+        """key via flag creates new account, fetches shockers, auto-generates pishock_1."""
         config = self._make_config()
         api_mock = self._make_api_mock()
 
@@ -68,20 +73,16 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                return_value={"api_key": "test_key"},
-            ),
             patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
             patch.object(Config, "save"),
         ):
             from pyshock.cli.commands.meta import auth
 
-            auth(api_key="test_key")
+            auth(key=PISHOCK_UUID)
 
         assert "pishock_1" in config.accounts
         assert config.accounts["pishock_1"]["provider"] == "pishock"
-        assert config.accounts["pishock_1"]["api_key"] == "test_key"
+        assert config.accounts["pishock_1"]["api_key"] == PISHOCK_UUID
         api_mock.get_account.assert_called_once()
         api_mock.list_shockers.assert_called_once()
 
@@ -116,19 +117,14 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                return_value={"api_key": "new_key"},
-            ),
             patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
             patch.object(Config, "save"),
         ):
             from pyshock.cli.commands.meta import auth
 
-            auth(api_key="new_key", account_id="pishock_1", force=True)
+            auth(key=PISHOCK_UUID, account_id="pishock_1", force=True)
 
-        assert config.accounts["pishock_1"]["api_key"] == "new_key"
-        # Old shocker removed by remove_account (clears shocker_index)
+        assert config.accounts["pishock_1"]["api_key"] == PISHOCK_UUID
         assert "old_shocker" not in config.shocker_index
         api_mock.get_account.assert_called_once()
 
@@ -172,17 +168,13 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                return_value={"api_key": "bad_key"},
-            ),
             patch("pyshock.cli.commands.meta.PiShockAPI", return_value=fail_mock),
             patch("pyshock.cli.commands.meta.console_err") as mock_err,
             pytest.raises(SystemExit) as exc_info,
         ):
             from pyshock.cli.commands.meta import auth
 
-            auth(api_key="bad_key")
+            auth(key=PISHOCK_UUID)
 
         assert exc_info.value.code == 1
         assert fail_mock.get_account.call_count == 3
@@ -192,17 +184,13 @@ class TestAuth:
     def test_tty_required_for_interactive(
         self,
     ) -> None:
-        """isatty=False with no --pishock-key raises SystemExit(1)."""
+        """isatty=False with no --key raises SystemExit(1)."""
         config = self._make_config()
 
         with (
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                side_effect=SystemExit(1),
-            ),
             pytest.raises(SystemExit) as exc_info,
         ):
             from pyshock.cli.commands.meta import auth
@@ -214,7 +202,7 @@ class TestAuth:
     def test_env_variable_used(
         self,
     ) -> None:
-        """PISHOCK_API_KEY env var is used when isatty=False and no --pishock-key."""
+        """PISHOCK_API_KEY env var is used when isatty=False and no --key."""
         config = self._make_config()
         api_mock = self._make_api_mock(list_shockers_return=[])
 
@@ -222,20 +210,16 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                return_value={"api_key": "env_key"},
-            ),
             patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
             patch.object(Config, "save"),
-            patch.dict("os.environ", {"PISHOCK_API_KEY": "env_key"}, clear=False),
+            patch.dict("os.environ", {"PISHOCK_API_KEY": PISHOCK_UUID}, clear=False),
         ):
             from pyshock.cli.commands.meta import auth
 
             auth()
 
         assert "pishock_1" in config.accounts
-        assert config.accounts["pishock_1"]["api_key"] == "env_key"
+        assert config.accounts["pishock_1"]["api_key"] == PISHOCK_UUID
         api_mock.get_account.assert_called_once()
 
     def test_json_output(
@@ -249,10 +233,6 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch(
-                "pyshock.cli.commands.init_creds.prompt_pishock_credentials",
-                return_value={"api_key": "test_key"},
-            ),
             patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
             patch("pyshock.cli.commands.meta.print_output") as mock_print_output,
             patch("pyshock.cli.commands.meta.render_shocker_table") as mock_render,
@@ -261,7 +241,7 @@ class TestAuth:
         ):
             from pyshock.cli.commands.meta import auth
 
-            auth(api_key="test_key", json_output=True)
+            auth(key=PISHOCK_UUID, json_output=True)
 
         mock_render.assert_not_called()
         mock_print_output.assert_called_once()
@@ -269,3 +249,88 @@ class TestAuth:
         assert "shockers" in output
         assert len(output["shockers"]) == 1
         assert output["shockers"][0]["shocker_id"] == "abc123"
+
+    def test_new_account_openshock_key_flag(
+        self,
+    ) -> None:
+        """OpenShock token via --key creates openshock_1, stores api_token."""
+        config = self._make_config()
+        api_mock = self._make_api_mock(spec=OpenShockAPI)
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=config),
+            patch("pyshock.cli.config.get_config", return_value=config),
+            patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
+            patch("pyshock.cli.commands.meta.OpenShockAPI", return_value=api_mock),
+            patch.object(Config, "save"),
+        ):
+            from pyshock.cli.commands.meta import auth
+
+            auth(key=OPENSHOCK_TOKEN)
+
+        assert "openshock_1" in config.accounts
+        assert config.accounts["openshock_1"]["provider"] == "openshock"
+        assert config.accounts["openshock_1"]["api_token"] == OPENSHOCK_TOKEN
+        api_mock.get_account.assert_called_once()
+
+    def test_new_account_openshock_env_var(
+        self,
+    ) -> None:
+        """OPENSHOCK_API_TOKEN env var creates openshock_1, stores api_token."""
+        config = self._make_config()
+        api_mock = self._make_api_mock(list_shockers_return=[], spec=OpenShockAPI)
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=config),
+            patch("pyshock.cli.config.get_config", return_value=config),
+            patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
+            patch("pyshock.cli.commands.meta.OpenShockAPI", return_value=api_mock),
+            patch.object(Config, "save"),
+            patch.dict("os.environ", {"OPENSHOCK_API_TOKEN": OPENSHOCK_TOKEN}, clear=False),
+        ):
+            from pyshock.cli.commands.meta import auth
+
+            auth()
+
+        assert "openshock_1" in config.accounts
+        assert config.accounts["openshock_1"]["api_token"] == OPENSHOCK_TOKEN
+        api_mock.get_account.assert_called_once()
+
+    def test_both_env_vars_raises(
+        self,
+    ) -> None:
+        """Both PISHOCK_API_KEY and OPENSHOCK_API_TOKEN set raises SystemExit(1)."""
+        config = self._make_config()
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=config),
+            patch("pyshock.cli.config.get_config", return_value=config),
+            patch.dict(
+                "os.environ",
+                {"PISHOCK_API_KEY": PISHOCK_UUID, "OPENSHOCK_API_TOKEN": OPENSHOCK_TOKEN},
+                clear=False,
+            ),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            from pyshock.cli.commands.meta import auth
+
+            auth()
+
+        assert exc_info.value.code == 1
+
+    def test_unrecognized_key_format(
+        self,
+    ) -> None:
+        """--key with unrecognized format raises SystemExit(1)."""
+        config = self._make_config()
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=config),
+            patch("pyshock.cli.config.get_config", return_value=config),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            from pyshock.cli.commands.meta import auth
+
+            auth(key="not-a-valid-format")
+
+        assert exc_info.value.code == 1

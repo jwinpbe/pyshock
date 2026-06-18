@@ -82,7 +82,7 @@ def error_json(err: BaseException) -> dict[str, str | int]:
 def shocker_json(s: Shocker, account_id: str | None = None) -> dict[str, Any]:
     """Convert a Shocker to a JSON dict, dropping internal IDs."""
     d = asdict(s)
-    for k in ("share_id", "owner_id", "client_id", "hub_id", "device_id", "owner_uuid", "owner_image"):
+    for k in ("share_id", "owner_id", "client_id", "pishock_hub_id", "device_id", "shared_by", "owner_image"):
         d.pop(k, None)
     if account_id is not None:
         d["account_id"] = account_id
@@ -369,34 +369,19 @@ def render_full_code_table(shockers: list[Shocker]) -> None:
         _styled_print(table)
 
 
-def render_init_welcome(
-    provider: str,
-    *,
-    provider_label: str | None = None,
-    api_key_url: str | None = None,
-) -> None:
-    """Print the init welcome panel.
-
-    Args:
-        provider: Provider name ("pishock").
-        provider_label: Override for provider display name.
-        api_key_url: Override for API key URL.
-    """
-    provider_info: dict[str, tuple[str, str]] = {
-        "pishock": ("PiShock", "https://login.pishock.com/Account"),
-    }
-    label, url = provider_info.get(provider, (provider.capitalize(), ""))
-    if provider_label is not None:
-        label = provider_label
-    if api_key_url is not None:
-        url = api_key_url
-
+def render_init_welcome() -> None:
+    """Print the init welcome panel (provider-neutral)."""
     _styled_print(
         _styled_panel(
-            f"""\
+            """\
 This tool will help you
 configure PyShock and set
-up your {label} API credentials.
+up your API credentials.
+
+[bold]PiShock and OpenShock keys
+are both accepted — the
+provider is detected
+automatically from your key.[/bold]
 
 [bold]Please do not enter your
 Account password into this
@@ -408,7 +393,7 @@ program, only API Keys.[/bold]""",
     )
     _styled_print(
         _styled_panel(
-            url,
+            "PiShock: https://login.pishock.com/Account\nOpenShock: https://openshock.app/#/dashboard/tokens",
             title="[bold]Get an API Key at:[/bold]",
             padding=(1, 2),
         )
@@ -434,8 +419,8 @@ def render_no_creds_panel() -> None:
     _styled_print(
         _styled_panel(
             "[white]"
-            "Use --pishock-key, set PISHOCK_API_KEY, "
-            "or run 'pyshock init' to configure credentials interactively[/white]",
+            "Use --key, set PISHOCK_API_KEY or OPENSHOCK_API_TOKEN, "
+            "or run 'pyshock auth' to configure credentials interactively[/white]",
             title="[bold black on white] API credentials not found [/bold black on white]",
             style="red",
             padding=(1, 1),

@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING
 
 from pyshock.cli.display import console, render_compact_code_table, render_full_code_table
 from pyshock.errors import CliError
+from pyshock.openshockapi import OpenShockAPI
 
 if TYPE_CHECKING:
     from pyshock.models.shocker import Shocker
     from pyshock.pishockapi import PiShockAPI
 
 
-def code_add(code: str, api: PiShockAPI) -> None:
+def code_add(code: str, api: PiShockAPI | OpenShockAPI) -> None:
     """Claim a share code.
 
     Args:
@@ -25,12 +26,19 @@ def code_add(code: str, api: PiShockAPI) -> None:
     if not code or not code.strip():
         raise CliError("Share code cannot be empty.")
 
+    code = code.strip()
+
     with console.status("Adding share code...", spinner="bouncingBar"):
-        api.add_share_code(code.strip())
+        if isinstance(api, OpenShockAPI):
+            if not api.is_cookie_auth:
+                raise CliError("OpenShock share codes require cookie auth. Use a PiShock account instead.")
+            api.link_share_code(code)
+        else:
+            api.add_share_code(code)
     console.print(f"Share code '[bold]{code}[/bold]' added successfully.")
 
 
-def code_delete(share_code: str, api: PiShockAPI) -> None:
+def code_delete(share_code: str, api: PiShockAPI | OpenShockAPI) -> None:
     """Remove a share code.
 
     Args:
@@ -38,7 +46,12 @@ def code_delete(share_code: str, api: PiShockAPI) -> None:
         api: API client.
     """
     with console.status("Deleting share code...", spinner="bouncingBar"):
-        api.delete_share(share_code)
+        if isinstance(api, OpenShockAPI):
+            if not api.is_cookie_auth:
+                raise CliError("OpenShock share codes require cookie auth. Use a PiShock account instead.")
+            api.unlink_share_code(share_code)
+        else:
+            api.delete_share(share_code)
     console.print(f"Share code '[bold]{share_code}[/bold]' deleted successfully.")
 
 

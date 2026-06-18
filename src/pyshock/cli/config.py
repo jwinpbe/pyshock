@@ -78,8 +78,6 @@ class Config:
         except OSError as e:
             console_err.print(f"[red]Warning: failed to save config.\nError returned: {e}[/red]")
 
-    # -- Account properties --
-
     @property
     def accounts(self) -> dict[str, AccountEntry]:
         """Return accounts dict, auto-init empty."""
@@ -130,8 +128,6 @@ class Config:
             self._data["confirmations"] = {}
             return self._data["confirmations"]
         return raw
-
-    # -- Account management --
 
     def add_account(self, account_id: str, provider: str, **creds: Any) -> None:
         """Add or update an account entry.

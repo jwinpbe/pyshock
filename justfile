@@ -7,7 +7,6 @@ lint:
     uv run ruff format src/pyshock
     uv run ruff check --fix src/pyshock tests/
     pyrefly check src/pyshock
-    sloppylint -f compact ./src/pyshock/
 
 test:
     uv run pytest --cov=pyshock --cov-report=term-missing

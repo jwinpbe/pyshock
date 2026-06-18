@@ -20,6 +20,7 @@ from pyshock.cli.config import Config
 from pyshock.cli.context import _current_account_id, json_mode
 from pyshock.pishockapi import PiShockAPI
 
+
 @pytest.fixture
 def console() -> Console:
     """Deterministic Rich console for capturing output in tests."""

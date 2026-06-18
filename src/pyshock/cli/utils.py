@@ -14,10 +14,13 @@ from pyshock.cli.context import _current_account_id, json_mode
 from pyshock.cli.display import console, console_err
 from pyshock.constants import (
     MAX_INTENSITY,
+    OPENSHOCK_MAX_DURATION_MS,
+    OPENSHOCK_MIN_DURATION_MS,
     PISHOCK_MAX_DURATION_MS,
     PISHOCK_MIN_DURATION_MS,
 )
 from pyshock.errors import CliError
+from pyshock.openshockapi import OpenShockAPI
 from pyshock.pishockapi import PiShockAPI
 
 if TYPE_CHECKING:
@@ -26,7 +29,7 @@ if TYPE_CHECKING:
     from pyshock.cli.config import Config
     from pyshock.models.operation import OperationName, ShockerOperation
 
-_ApiClient = PiShockAPI
+_ApiClient = PiShockAPI | OpenShockAPI
 
 
 def validate_duration(dur: float, *, min_ms: int, max_ms: int) -> int:
@@ -41,14 +44,15 @@ def validate_duration(dur: float, *, min_ms: int, max_ms: int) -> int:
     return int(dur)
 
 
-def validate_operation_params(duration: float, intensity: int) -> int:
-    """Validate and normalise duration/intensity for a PiShock operation.
+def validate_operation_params(duration: float, intensity: int, provider: str = "pishock") -> int:
+    """Validate and normalise duration/intensity for an operation.
 
-    Durations < 16 are treated as seconds.
+    Durations < 16 are treated as seconds. Range depends on provider.
 
     Args:
         duration: Duration in seconds (<16) or milliseconds (>=16).
         intensity: Intensity 0-100.
+        provider: API provider ("pishock" or "openshock").
 
     Returns:
         Duration in milliseconds.
@@ -58,7 +62,9 @@ def validate_operation_params(duration: float, intensity: int) -> int:
     """
     if intensity < 0 or intensity > MAX_INTENSITY:
         raise CliError("Intensity must be 0-100.")
-    return validate_duration(duration, min_ms=PISHOCK_MIN_DURATION_MS, max_ms=PISHOCK_MAX_DURATION_MS)
+    min_dur = OPENSHOCK_MIN_DURATION_MS if provider == "openshock" else PISHOCK_MIN_DURATION_MS
+    max_dur = OPENSHOCK_MAX_DURATION_MS if provider == "openshock" else PISHOCK_MAX_DURATION_MS
+    return validate_duration(duration, min_ms=min_dur, max_ms=max_dur)
 
 
 _current_api_client: ContextVar[_ApiClient] = ContextVar("_current_api_client")
@@ -121,7 +127,7 @@ def resolve_account(
         if resolved is not None:
             return resolved
 
-    raise CliError("No account resolved. Run 'pyshock init' to configure accounts.")
+    raise CliError("No account resolved. Run 'pyshock auth' to configure accounts.")
 
 
 def get_api_for_account(account_id: str) -> _ApiClient:
@@ -149,7 +155,12 @@ def get_api_for_account(account_id: str) -> _ApiClient:
             raise CliError(f"Account '{account_id}' missing PiShock API key.")
         return PiShockAPI(api_key)
 
-    # TODO: OpenShock CLI support
+    if provider == "openshock":
+        api_token = entry.get("api_token")
+        if not api_token:
+            raise CliError(f"Account '{account_id}' missing OpenShock API token.")
+        return OpenShockAPI(api_token=api_token)
+
     raise CliError(f"Unknown provider '{provider}' for account '{account_id}'.")
 
 
@@ -174,7 +185,7 @@ def resolve_shocker_id(api: _ApiClient) -> str:
     if len(all_shockers) == 1:
         return all_shockers[0].shocker_id
 
-    raise CliError("Multiple shockers found. Specify --shocker-id or run 'pyshock init' to set a default.")
+    raise CliError("Multiple shockers found. Specify --shocker-id or run 'pyshock auth' to set a default.")
 
 
 def send_operation(
@@ -199,7 +210,8 @@ def send_operation(
     if entry is None:
         raise CliError(f"Account '{account_id}' not found.")
 
-    duration = validate_operation_params(duration, intensity)
+    provider = entry.get("provider", "pishock")
+    duration = validate_operation_params(duration, intensity, provider)
     api = get_api()
     resolved_id = shocker_id if shocker_id is not None else resolve_shocker_id(api)
     label = operation.name.capitalize()

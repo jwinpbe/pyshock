@@ -223,13 +223,10 @@ class TestListShockers:
         shockers = api_client.list_shockers()
 
         assert len(shockers) == 1
-        # Merged shocker: reversed merge sets owner_uuid from shared side,
-        # so is_owned becomes False. In practice, the website doesn't allow
-        # an owned shocker to also be shared with you, so this case is defensive.
+
         assert shockers[0].is_owned is False
         assert shockers[0].is_shared is True
         assert shockers[0].owned_by == "owner123"
-        # Owned metadata survives the merge
         assert shockers[0].device_id is not None
         assert shockers[0].model is not None
         assert shockers[0].rf_id is not None

@@ -21,10 +21,6 @@ from pyshock.cli.config import Config
 from pyshock.cli.context import _current_account_id, json_mode
 from pyshock.errors import APIError, CliError, NotAuthorizedError, ShockerNotFoundError
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 
 def _call_launcher_with_exc(
     tokens: list[str],
@@ -69,11 +65,6 @@ def _call_launcher_with_exc(
         patch("pyshock.cli.utils.send_operation", side_effect=exc),
     ):
         _launcher(*tokens)
-
-
-# ---------------------------------------------------------------------------
-# _exit_with_error — direct tests for every error type
-# ---------------------------------------------------------------------------
 
 
 class TestExitWithError:
@@ -168,11 +159,6 @@ class TestExitWithError:
         assert exc_info.value.code == 1
         mock_err.print.assert_called_once()
         assert "Network error: connection refused" in mock_err.print.call_args.args[0]
-
-
-# ---------------------------------------------------------------------------
-# _launcher — direct tests of the meta-default handler
-# ---------------------------------------------------------------------------
 
 
 class TestLauncherDispatch:

@@ -20,7 +20,8 @@ from pyshock.cli.display import (
     render_verify_panel,
     shocker_json,
 )
-from pyshock.errors import APIError, NotAuthorizedError
+from pyshock.errors import APIError, CliError, NotAuthorizedError
+from pyshock.openshockapi import OpenShockAPI
 from pyshock.pishockapi import PiShockAPI
 
 if TYPE_CHECKING:
@@ -30,11 +31,11 @@ if TYPE_CHECKING:
 def auth(  # noqa: PLR0915
     *,
     force: bool = False,
-    api_key: Annotated[str | None, Parameter(name="pishock-key")] = None,
+    key: Annotated[str | None, Parameter(name="key")] = None,
     account_id: Annotated[str | None, Parameter(name="account")] = None,
     json_output: Annotated[bool, Parameter(name="json")] = False,
 ) -> None:
-    """Initialize PiShock API credentials and fetch shockers.
+    """Initialize API credentials and fetch shockers.
 
     Supports adding multiple accounts. Use --account to specify an account ID.
     """
@@ -42,38 +43,42 @@ def auth(  # noqa: PLR0915
 
     from pyshock.cli.commands.init_creds import (
         fix_account_prefix,
-        prompt_pishock_credentials,
+        prompt_credentials,
         resolve_account_id,
-        resolve_provider,
+        resolve_credential,
     )
 
     config = get_config()
     json_mode.set(json_output)
+    is_tty = terminal_check.isatty()
+
+    try:
+        credential, provider = resolve_credential(key)
+    except CliError as e:
+        console_err.print(f"[red]{e}[/red]")
+        raise SystemExit(1) from None
 
     user_provided_id = account_id is not None
-    provider = resolve_provider(None)
-    account_id = resolve_account_id(config, provider, account_id, force=force)
+    account_id = resolve_account_id(config, provider or "pishock", account_id, force=force)
     if account_id is None:
         return
 
-    account_id = fix_account_prefix(config, account_id, provider, user_provided_id=user_provided_id)
+    account_id = fix_account_prefix(config, account_id, provider or "pishock", user_provided_id=user_provided_id)
 
-    is_tty = terminal_check.isatty()
-
-    from os import environ as env_vars
-
-    if is_tty and not env_vars.get("PISHOCK_API_KEY"):
+    if is_tty and credential is None:
         from pyshock.cli.display import render_init_welcome
 
-        render_init_welcome(provider="pishock")
+        render_init_welcome()
 
-    api_cls = PiShockAPI
+    api_cls = PiShockAPI if provider == "pishock" else OpenShockAPI
 
     creds: dict = {}
-    skip_env = False
     max_attempts = 3
     for attempt in range(1, max_attempts + 1):
-        creds = prompt_pishock_credentials(api_key=api_key, is_tty=is_tty, skip_env=skip_env)
+        if credential is None:
+            credential, provider = prompt_credentials(is_tty=is_tty)
+            api_cls = PiShockAPI if provider == "pishock" else OpenShockAPI
+        creds = {"api_key": credential} if provider == "pishock" else {"api_token": credential}
         try:
             with (
                 api_cls(**creds) as api,
@@ -82,22 +87,25 @@ def auth(  # noqa: PLR0915
                 api.get_account()
             break
         except NotAuthorizedError as e:
-            if attempt < max_attempts:
-                console_err.print(f"[red]{e.message}[/red]")
-                console_err.print(f"[yellow]Attempt {attempt}/{max_attempts} failed, please try again.[/yellow]")
-                skip_env = True
-            else:
+            if attempt >= max_attempts:
                 console_err.print("[bold red]Failed to authorize after 3 attempts[/bold red]")
                 raise SystemExit(1) from None
+            console_err.print(f"[red]{e.message}[/red]")
+            console_err.print(f"[yellow]Attempt {attempt}/{max_attempts} failed, please try again.[/yellow]")
+            if key is None:
+                credential = None
+
+    account_id = fix_account_prefix(config, account_id, provider or "pishock", user_provided_id=user_provided_id)
 
     if account_id in config.accounts:
         config.remove_account(account_id)
-    config.add_account(account_id, provider, **creds)
+    config.add_account(account_id, provider or "pishock", **creds)
 
+    label = "PiShock" if provider == "pishock" else "OpenShock"
     with (
         api_cls(**creds) as api,
         console.status(
-            "Credentials verified! Fetching information from PiShock API...",
+            f"Credentials verified! Fetching information from {label} API...",
             spinner="bouncingBar",
         ),
     ):
@@ -163,7 +171,7 @@ def logout(account_id: Annotated[str | None, Parameter(name="account")] = None) 
             entry = config.accounts[acct_id]
             provider = entry.get("provider", "?")
             shocker_count = len(entry.get("shockers", []))
-            cred_hint = entry.get("api_key") or "?"
+            cred_hint = entry.get("api_key") or entry.get("api_token") or "?"
             user_hint = cred_hint[:12]
             console.print(f"  [bold]{acct_id}[/bold] ({provider}, {user_hint}, {shocker_count} shocker(s))")
         console.print()
@@ -291,7 +299,8 @@ def verify(account_id: Annotated[str | None, Parameter(name="account")] = None) 
             })
         else:
             render_verify_panel(account, provider, account_id)
-            console.print(f"PiShock API reports credentials OK for [bold]{account_id}[/bold].")
+            label = "PiShock" if provider == "pishock" else "OpenShock"
+            console.print(f"{label} API reports credentials OK for [bold]{account_id}[/bold].")
         return
 
     results: list[dict] = []
@@ -311,7 +320,8 @@ def verify(account_id: Annotated[str | None, Parameter(name="account")] = None) 
                 })
             else:
                 render_verify_panel(account, prov, acct_id)
-                console.print(f"PiShock API reports credentials OK for [bold]{acct_id}[/bold].")
+                label = "PiShock" if prov == "pishock" else "OpenShock"
+                console.print(f"{label} API reports credentials OK for [bold]{acct_id}[/bold].")
         except (APIError, NotAuthorizedError, RequestException) as e:
             if json_mode.get():
                 results.append({"ok": False, "account_id": acct_id, "error": str(e)})
