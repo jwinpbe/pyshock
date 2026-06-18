@@ -1,6 +1,8 @@
 # PyShock
 
-Python client for the new, unified PiShock API. Control a shocker from the terminal, or add control to your program!
+Python client for the new, unified PiShock API and the Openshock API.
+
+Control a shocker from the terminal, or add control to your program!
 
 ## Install
 
@@ -42,13 +44,13 @@ Pass credentials on the command line or cache them with `pyshock init`.
 With a flag:
 
 ```
-pyshock --pishock-key KEY shock --duration 2 --intensity 15 --shocker-id 00000
+pyshock --key KEY shock --duration 2 --intensity 15 --shocker-id 00000
 ```
 
 Interactively:
 
 ```
-pyshock init
+pyshock auth
 
 Enter your API key: _____
 ```
@@ -56,7 +58,7 @@ Enter your API key: _____
 Or in one step:
 
 ```
-pyshock init --pishock-key KEY
+pyshock auth --key KEY
 ```
 
 PyShock stores credentials in your user configuration folder. Shockers are cached to avoid API lookups. Refresh with `pyshock devices`.
@@ -65,6 +67,8 @@ Be advised, your API key will be stored in plain text.
 
 ## API
 
+### PiShockAPI
+
 ```python
 from pyshock import PiShockAPI, ShockerOperation
 
@@ -72,7 +76,7 @@ with PiShockAPI(api_key="key") as api:
     for shocker in api.list_shockers():
         print(shocker.name, shocker.shocker_id)
 
-    shared_shocker = api.get_shocker_by_share_code("ABC123")
+    shared_shocker = api.get_shocker_by_share_code("ABC123456")
 
     api.operate_shocker(
         shocker=shared_shocker,
@@ -84,10 +88,45 @@ with PiShockAPI(api_key="key") as api:
 
 Operations: `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds (0-15000), intensity 0-100.
 
+### OpenShockAPI
+
+```python
+from pyshock import OpenShockAPI, ShockerOperation
+
+# Token authentication (limited endpoints)
+with OpenShockAPI(api_token="token") as api:
+    for shocker in api.list_shockers():
+        print(shocker.name, shocker.shocker_id)
+        api.operate_shocker(
+            shocker=shocker,
+            operation=ShockerOperation.SHOCK,
+            duration=2000,
+            intensity=50,
+        )
+
+# Cookie authentication (full access, including share codes)
+from http.cookiejar import MozillaCookieJar
+
+jar = MozillaCookieJar("cookies.txt")
+jar.load(ignore_discard=True, ignore_expires=True)
+cookie = jar["openShockSession"].value
+
+with OpenShockAPI(session_cookie=cookie) as api:
+    account = api.get_account()
+    print(account.username)
+
+    for shocker in api.list_share_codes():
+        print(shocker.name, shocker.shocker_id)
+
+    api.link_share_code("ABC123456")
+```
+
+Operations: `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds (300-65535), intensity 0-100.
+
 ## Requirements
 
 Python 3.10+. Niquests for the library. The `[cli]` extra adds cyclopts, platformdirs, and rich for the terminal interface.
 
 ## License
 
-Your choice of AGPL or commercial. See LICENSE for more information.
+Your choice of AGPLv3-or-later or commercial. See LICENSE for more information.
