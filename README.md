@@ -1,4 +1,9 @@
-# PyShock
+# PyShock ⚡
+
+[![PyPI - Version](https://img.shields.io/pypi/v/pyshock?style=for-the-badge&color=blue)](https://pypi.org/project/pyshock/)
+[![PyPI - License](https://img.shields.io/pypi/l/pyshock?style=for-the-badge&color=blue)](https://github.com/jwinpbe/pyshock/blob/main/LICENSE)
+[![PyPI - Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://pypi.org/project/pyshock/)
+[![build](https://img.shields.io/github/actions/workflow/status/jwinpbe/pyshock/ci.yml?branch=main&style=for-the-badge&label=build)](https://github.com/jwinpbe/pyshock/actions/workflows/ci.yml)
 
 Python client for the new, unified PiShock API and the Openshock API.
 
@@ -125,7 +130,11 @@ Operations: `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in millisecond
 
 ## Requirements
 
-Python 3.10+. Niquests for the library. The `[cli]` extra adds cyclopts, platformdirs, and rich for the terminal interface.
+Python 3.10+.
+
+[Niquests](https://github.com/jawah/niquests) for the library.
+
+The `[cli]` extra adds cyclopts, platformdirs, and rich for the terminal interface.
 
 ## License
 
