@@ -13,13 +13,13 @@ Control a shocker from the terminal, or add control to your program!
 
 For the command line tool:
 
-```
+```bash
 uv tool install 'pyshock[cli]'
 ```
 
 Use it as a library in your python program:
 
-```
+```bash
 uv add pyshock
 ```
 
@@ -27,13 +27,13 @@ uv add pyshock
 
 Set up credentials:
 
-```
+```bash
 pyshock init
 ```
 
 Control a device:
 
-```
+```bash
 pyshock shock --duration 2 --intensity 75 --shocker-id 00000
 
 # or, if you only have one shocker associated with your account:
@@ -48,13 +48,13 @@ Pass credentials on the command line or cache them with `pyshock init`.
 
 With a flag:
 
-```
+```bash
 pyshock --key KEY shock --duration 2 --intensity 15 --shocker-id 00000
 ```
 
 Interactively:
 
-```
+```bash
 pyshock auth
 
 Enter your API key: _____
@@ -62,7 +62,7 @@ Enter your API key: _____
 
 Or in one step:
 
-```
+```bash
 pyshock auth --key KEY
 ```
 
