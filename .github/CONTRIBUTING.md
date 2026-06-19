@@ -1,6 +1,6 @@
 # Contributing
 
-You want to make PyShock better. Thank you.
+Thank you for wanting to contribute to PyShock! I really appreciate it.
 
 ## Setup
 
@@ -33,13 +33,13 @@ just test
 
 `just lint` formats your code, checks for issues, and runs the type checker. `just test` runs the full test suite with coverage.
 
-If you changed CLI behaviour, test with `--json` output too.
+If you changed CLI behavior, test with `--json` output too.
 
 ## Opening a pull request
 
 Push your branch and open a PR. Use the pull request template. Link the issue your change addresses with `closes #XXXX`.
 
-Your PR will be reviewed. You might be asked to make changes. That's normal.
+Your PR will be reviewed, I may ask you to make changes!
 
 ## Questions
 
