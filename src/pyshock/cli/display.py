@@ -275,19 +275,13 @@ def render_info_table(shocker: Shocker, account_id: str | None = None) -> None:
     table.add_row("Relationship", device_type)
     table.add_row("Owner", owner)
     table.add_row("", "")
-    table.add_row(
-        "Shock", badge(value=shocker.can_shock, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
-    )
+    table.add_row("Shock", badge(value=shocker.can_shock, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "))
     table.add_row(
         "Vibrate",
         badge(value=shocker.can_vibrate, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "),
     )
-    table.add_row(
-        "Beep", badge(value=shocker.can_beep, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
-    )
-    table.add_row(
-        "Pause", badge(value=shocker.can_pause, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
-    )
+    table.add_row("Beep", badge(value=shocker.can_beep, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "))
+    table.add_row("Pause", badge(value=shocker.can_pause, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "))
     table.add_row(
         "Continuous Mode",
         badge(value=shocker.can_hold, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "),
@@ -346,22 +340,12 @@ def render_full_code_table(shockers: list[Shocker]) -> None:
         table.add_row("ID", item.shocker_id)
         table.add_row("Owner", f"[bold italic]{item.owned_by or '—'}[/bold italic]")
         table.add_row("", "")
-        table.add_row(
-            "Shock", badge(value=item.can_shock, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
-        )
-        table.add_row(
-            "Vibrate", badge(value=item.can_vibrate, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
-        )
-        table.add_row(
-            "Beep", badge(value=item.can_beep, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
-        )
+        table.add_row("Shock", badge(value=item.can_shock, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} "))
+        table.add_row("Vibrate", badge(value=item.can_vibrate, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} "))
+        table.add_row("Beep", badge(value=item.can_beep, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} "))
         table.add_row("", "")
-        table.add_row(
-            "Paused?", badge(value=item.paused, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
-        )
-        table.add_row(
-            "Locked?", badge(value=item.locked, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
-        )
+        table.add_row("Paused?", badge(value=item.paused, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} "))
+        table.add_row("Locked?", badge(value=item.locked, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} "))
         table.add_row("", "")
         table.add_row("Max duration", f"{item.max_duration}s")
         table.add_row("Max intensity", f"{item.max_intensity} / 100")

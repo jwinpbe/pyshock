@@ -88,7 +88,7 @@ with PiShockAPI(api_key="key") as api:
     api.operate_shocker(
         shocker=shared_shocker,
         operation=ShockerOperation.SHOCK,
-        duration=2000, # 2 seconds
+        duration=2000,  # 2 seconds
         intensity=50,
     )
 ```
