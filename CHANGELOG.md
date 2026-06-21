@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2] - 2026-06-21
+
+- Changed text color on rendered badges for visual clarity on unthemed terminals
+
+## [0.1.1] - 2026-06-17
+
+- Bumped version to build and push to pypi due to pre-existing pyshock name collision
+
 ## [0.1.0] - 2026-06-17
 
 ### Added

@@ -123,7 +123,7 @@ class _Badge:
             yield Segment(" " * remaining)
 
 
-def badge(*, value: bool, yes_text: str, no_text: str, yes_fg: str = "white", no_fg: str = "black") -> _Badge:
+def badge(*, value: bool, yes_text: str, no_text: str, yes_fg: str = "black", no_fg: str = "black") -> _Badge:
     """Build a styled green/red status badge.
 
     If true, it returns a green background with yes_text colored with yes_fg.
@@ -276,21 +276,21 @@ def render_info_table(shocker: Shocker, account_id: str | None = None) -> None:
     table.add_row("Owner", owner)
     table.add_row("", "")
     table.add_row(
-        "Shock", badge(value=shocker.can_shock, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white")
+        "Shock", badge(value=shocker.can_shock, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
     )
     table.add_row(
         "Vibrate",
-        badge(value=shocker.can_vibrate, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white"),
+        badge(value=shocker.can_vibrate, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "),
     )
     table.add_row(
-        "Beep", badge(value=shocker.can_beep, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white")
+        "Beep", badge(value=shocker.can_beep, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
     )
     table.add_row(
-        "Pause", badge(value=shocker.can_pause, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white")
+        "Pause", badge(value=shocker.can_pause, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ")
     )
     table.add_row(
         "Continuous Mode",
-        badge(value=shocker.can_hold, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white"),
+        badge(value=shocker.can_hold, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "),
     )
     table.add_row("", "")
     table.add_row("Max duration", f"{shocker.max_duration}s")
@@ -310,7 +310,7 @@ def render_confirmation_panel(
     for name, enabled in operations:
         table.add_row(
             name.capitalize(),
-            badge(value=enabled, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  ", yes_fg="white"),
+            badge(value=enabled, yes_text=f"  {CHECK_MARK}  ", no_text=f"  {X_MARK}  "),
         )
 
     _styled_print(_styled_panel(table, title="Confirmation Settings", title_align="center"))
@@ -347,20 +347,20 @@ def render_full_code_table(shockers: list[Shocker]) -> None:
         table.add_row("Owner", f"[bold italic]{item.owned_by or '—'}[/bold italic]")
         table.add_row("", "")
         table.add_row(
-            "Shock", badge(value=item.can_shock, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ", yes_fg="white")
+            "Shock", badge(value=item.can_shock, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
         )
         table.add_row(
-            "Vibrate", badge(value=item.can_vibrate, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ", yes_fg="white")
+            "Vibrate", badge(value=item.can_vibrate, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
         )
         table.add_row(
-            "Beep", badge(value=item.can_beep, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ", yes_fg="white")
+            "Beep", badge(value=item.can_beep, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
         )
         table.add_row("", "")
         table.add_row(
-            "Paused?", badge(value=item.paused, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ", yes_fg="white")
+            "Paused?", badge(value=item.paused, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
         )
         table.add_row(
-            "Locked?", badge(value=item.locked, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ", yes_fg="white")
+            "Locked?", badge(value=item.locked, yes_text=f" {CHECK_MARK} ", no_text=f" {X_MARK} ")
         )
         table.add_row("", "")
         table.add_row("Max duration", f"{item.max_duration}s")

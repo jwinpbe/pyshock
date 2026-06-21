@@ -42,6 +42,8 @@ pyshock shock 2 75
 
 Run `pyshock info 00000` for device details. Run `pyshock devices` to list devices and capabilities.
 
+Note: Due to a limitation in the Pishock API, you will need to share your own shocker with yourself in order to use it via the API.
+
 ## Authentication
 
 Pass credentials on the command line or cache them with `pyshock init`.
