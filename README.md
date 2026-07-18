@@ -42,7 +42,8 @@ pyshock shock 2 75
 
 Run `pyshock info 00000` for device details. Run `pyshock devices` to list devices and capabilities.
 
-Note: Due to a limitation in the Pishock API, you will need to share your own shocker with yourself in order to use it via the API or CLI.
+> [!NOTE]
+> Due to a limitation in the Pishock API, you will need to share your own shocker with yourself in order to use it via the API or CLI.
 
 ## Authentication
 
@@ -101,9 +102,9 @@ with PiShockAPI(api_key="key") as api:
 `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds **(16-15000)**, intensity **0-100**.
 
 > [!NOTE]
-> Shockers may appear in both owned and shared provider responses.
+> PiShock's API displays shockers that are shared with you in both shared and owned API endpoints.
 > 
-> PyShock returns one record per shocker ID, which combine 'owned device' metadata with permissions and limits attached to shared devices.
+> PyShock returns one record per shocker ID, which combines the metadata from the 'owned' endpoint with the permissions and limits of the shocker from the 'shared' endpoint.
 
 ### OpenShockAPI
 
@@ -143,7 +144,7 @@ with OpenShockAPI(session_cookie=cookie) as api:
 > [!NOTE]
 > PyShock validates the contents of provider responses.
 > 
-> Malformed or unexpected responses will raise APIError rather than being treated as empty results or discarded.
+> Malformed or unexpected responses will raise `APIError` rather than being treated as empty results or discarded.
 
 ## Requirements
 
