@@ -5,7 +5,7 @@
 [![PyPI - Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://pypi.org/project/pyshock/)
 [![build](https://img.shields.io/github/actions/workflow/status/jwinpbe/pyshock/ci.yml?branch=main&style=for-the-badge&label=build)](https://github.com/jwinpbe/pyshock/actions/workflows/ci.yml)
 
-A synchronous Python client and CLI for controlling PiShock and OpenShock devices, based on the new unified PiShock API and the OpenShock API.
+Python client and CLI for controlling PiShock and OpenShock devices, based on the new unified PiShock API and the OpenShock API.
 
 Control a shocker from the terminal, or add control to your program!
 
