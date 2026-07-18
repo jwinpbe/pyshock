@@ -9,6 +9,7 @@ __all__ = [
 
 import logging
 import time
+from dataclasses import replace
 from typing import TYPE_CHECKING, Literal
 
 import niquests
@@ -52,6 +53,16 @@ def _truncate(text: str, limit: int = 512) -> str:
     if len(text) <= limit:
         return text
     return text[:limit] + "..."
+
+
+def _merge_shockers(shared: Shocker, owned: Shocker) -> Shocker:
+    """Retain share policy while adding metadata absent from the share response."""
+    return replace(
+        shared,
+        name=owned.name,
+        is_v3=owned.is_v3,
+        pishock_hub_id=owned.pishock_hub_id,
+    )
 
 
 BASE_URL = "https://api.pishock.com"
@@ -264,24 +275,27 @@ Response received:
             )
         return AccountInfo.from_api(data)
 
-    def list_shockers(self) -> list[Shocker]:
+    def list_shockers(self, *, refresh: bool = False) -> list[Shocker]:
         """Fetch shockers from /Shockers and /Share/GetShared, merge by id, and cache.
 
-        Returns the cached list on subsequent calls.
+        Returns the cached list on subsequent calls unless ``refresh`` is true.
+
+        Args:
+            refresh: Fetch current data even when this client has a cached result.
 
         Returns:
             List of all shockers (owned and shared).
         """
-        if self._shockers is not None:
+        if self._shockers is not None and not refresh:
             return list(self._shockers.values())
 
         claimed_data = self._request("GET", "Shockers")
         shared_data = self._request("GET", "Share/GetShared")
 
         if not isinstance(claimed_data, list):
-            claimed_data = []
+            raise APIError(message="Unexpected response from Shockers endpoint")
         if not isinstance(shared_data, list):
-            shared_data = []
+            raise APIError(message="Unexpected response from Share/GetShared endpoint")
 
         claimed = {s.shocker_id: s for s in (Shocker.from_api(item) for item in claimed_data)}
 
@@ -289,7 +303,7 @@ Response received:
             shared = Shocker.from_api(item)
             if shared.shocker_id in claimed:
                 base = claimed[shared.shocker_id]
-                claimed[shared.shocker_id] = Shocker.merge(shared, base)
+                claimed[shared.shocker_id] = _merge_shockers(shared, base)
             else:
                 # Shared shocker not in claimed -- currently not possible but this is defensive
                 claimed[shared.shocker_id] = shared
@@ -386,15 +400,15 @@ Response received:
         self._shockers = None
         self._share_code_index = None
 
-    def delete_share(self, share_code: str) -> None:
-        """Remove a share by code.
+    def delete_share(self, share_id: int | str) -> None:
+        """Remove a share by id.
 
         Invalidates the shocker cache.
 
         Args:
-            share_code: The share code to remove.
+            share_id: The share identifier returned by ``Share/GetShared``.
         """
-        self._request("DELETE", f"Share/{share_code}")
+        self._request("DELETE", f"Share/{share_id}")
         self._shockers = None
         self._share_code_index = None
 
@@ -410,7 +424,7 @@ Response received:
         Args:
             shocker: Shocker id (string) or Shocker instance.
             operation: Operation type.
-            duration: Duration in milliseconds (100-15000).
+            duration: Duration in milliseconds (16-15000).
             intensity: Intensity 0-100.
 
         Raises:

@@ -66,11 +66,13 @@ class TestCodeDelete:
         self,
         mock_pishock_api: MagicMock,
     ) -> None:
-        """Calling delete with a code calls api.delete_share."""
+        """Calling delete resolves the code and deletes the matching share id."""
+        mock_pishock_api.get_shocker_by_share_code.return_value = shared_shocker
         with patch("pyshock.cli.commands.code.utils.get_api", return_value=mock_pishock_api):
             delete("ABC123")
 
-        mock_pishock_api.delete_share.assert_called_once_with("ABC123")
+        mock_pishock_api.get_shocker_by_share_code.assert_called_once_with("ABC123")
+        mock_pishock_api.delete_share.assert_called_once_with(1)
 
 
 class TestCodeList:

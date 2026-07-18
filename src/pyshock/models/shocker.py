@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass
 
 from pyshock.constants import OPENSHOCK_MAX_DURATION_MS
 
@@ -247,19 +247,3 @@ class Shocker:
             owner_image=owner_info.get("image"),
             device_id=device_id,
         )
-
-    @staticmethod
-    def merge(shared: Shocker, owned: Shocker) -> Shocker:
-        """Overlay non-None owned fields onto a shared shocker.
-
-        Used when the same device appears in both owned and shared lists.
-
-        Args:
-            shared: Shocker from the shared endpoint (has permissions/limits).
-            owned: Shocker from the owned endpoint (has device metadata).
-
-        Returns:
-            Merged Shocker with owned fields taking precedence.
-        """
-        updates = {k: v for k, v in asdict(owned).items() if v is not None}
-        return replace(shared, **updates)

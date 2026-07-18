@@ -51,7 +51,10 @@ def code_delete(share_code: str, api: PiShockAPI | OpenShockAPI) -> None:
                 raise CliError("OpenShock share codes require cookie auth. Use a PiShock account instead.")
             api.unlink_share_code(share_code)
         else:
-            api.delete_share(share_code)
+            shocker = api.get_shocker_by_share_code(share_code)
+            if shocker.share_id is None:
+                raise CliError("PiShock did not return an id for this share.")
+            api.delete_share(shocker.share_id)
     console.print(f"Share code '[bold]{share_code}[/bold]' deleted successfully.")
 
 

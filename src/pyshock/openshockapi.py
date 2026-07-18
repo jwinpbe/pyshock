@@ -9,7 +9,7 @@ __all__ = [
 
 import logging
 import time
-from typing import Any, Literal
+from typing import Literal
 
 import niquests
 from niquests.utils import parse_url
@@ -27,6 +27,7 @@ from pyshock.errors import (
     ForbiddenError,
     NotAuthorizedError,
     PermissionMissingError,
+    ShareNotFoundError,
     ShockerNotFoundError,
     TokenAuthNotSupportedError,
 )
@@ -45,7 +46,16 @@ def _truncate(text: str, limit: int = 512) -> str:
     return text[:limit] + "..."
 
 
-_CONTROL_TYPE_MAP: dict[ShockerOperation, str] = {
+def _require_dict_list(value: object, *, context: str, nullable: bool = False) -> list[dict]:
+    """Keep malformed provider collections out of the model layer."""
+    if value is None and nullable:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise APIError(message=f"Unexpected {context} response")
+    return value
+
+
+_OPENSHOCK_CONTROL_TYPES: dict[ShockerOperation, str] = {
     ShockerOperation.SHOCK: "Shock",
     ShockerOperation.VIBRATE: "Vibrate",
     ShockerOperation.BEEP: "Sound",
@@ -55,6 +65,7 @@ _ERROR_TYPE_MAP: dict[str, type[APIError]] = {
     "Authentication.CookieMissingOrInvalid": NotAuthorizedError,
     "Authentication.Token.Invalid": NotAuthorizedError,
     "Authorization.Token.PermissionMissing": PermissionMissingError,
+    "Share.NotFound": ShareNotFoundError,
     "Shocker.NotFound": ShockerNotFoundError,
     "Shocker.Control.NotFound": ShockerNotFoundError,
 }
@@ -74,34 +85,56 @@ def _handle_openshock_error(response: niquests.Response) -> APIError:
             status_code=response.status_code,
         )
 
+    if not isinstance(data, dict):
+        return APIError(
+            message=f"Unexpected {type(data).__name__} error response",
+            status_code=response.status_code,
+        )
+
     status = response.status_code
     error_type = data.get("type", "")
+    if not isinstance(error_type, str):
+        error_type = ""
+    message = str(status)
+    for key in ("detail", "message", "title"):
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            message = value
+            break
 
     if "PermissionMissing" in error_type:
+        required_permission = data.get("requiredPermission")
+        if not isinstance(required_permission, str):
+            required_permission = None
+        granted_permissions = data.get("grantedPermissions")
+        if not isinstance(granted_permissions, list) or not all(
+            isinstance(permission, str) for permission in granted_permissions
+        ):
+            granted_permissions = []
         return PermissionMissingError(
-            message=data.get("message"),
-            required_permission=data.get("requiredPermission"),
-            granted_permissions=data.get("grantedPermissions", []),
+            message=message,
+            required_permission=required_permission,
+            granted_permissions=granted_permissions,
         )
 
     error_cls = _ERROR_TYPE_MAP.get(error_type)
     if error_cls is not None:
-        return error_cls(message=data.get("message"))
+        return error_cls(message=message)
 
     match status:
         case 401:
-            return NotAuthorizedError()
+            return NotAuthorizedError(message=message)
         case 403:
-            return ForbiddenError()
+            return ForbiddenError(message=message)
         case 404:
-            if "NotFound" in error_type:
-                return ShockerNotFoundError()
-            return APIError(message=data.get("message", "Not found"), status_code=404)
+            return APIError(message=message, status_code=404)
         case 400:
             errors = data.get("errors", {})
-            return APIError(message=f"Validation error: {errors}", status_code=400)
+            if errors:
+                return APIError(message=f"Validation error: {errors}", status_code=400)
+            return APIError(message=message, status_code=400)
         case _:
-            return APIError(message=data.get("message", str(status)), status_code=status)
+            return APIError(message=message, status_code=status)
 
 
 def health_check(session: niquests.Session | None = None, base_url: str | None = None) -> bool:
@@ -294,57 +327,6 @@ class OpenShockAPI:
         self._request("DELETE", f"1/shares/code/{code}")
         self._shockers = None
 
-    def list_share_codes(self) -> list[Shocker]:
-        """List all share codes (outgoing shares) via v2 API.
-
-        Requires session cookie authentication.
-
-        Returns:
-            List of Shocker objects from outgoing shares.
-
-        Raises:
-            TokenAuthNotSupportedError: If not using cookie auth.
-        """
-        if not self.is_cookie_auth:
-            raise TokenAuthNotSupportedError()
-
-        data = self._request("GET", "2/shares/user")
-        if not isinstance(data, dict):
-            return []
-
-        result: list[Shocker] = []
-        for outgoing in data.get("outgoing", []):
-            owner_info: dict[str, Any] = {
-                "name": outgoing.get("name"),
-                "id": outgoing.get("id"),
-                "image": outgoing.get("image"),
-            }
-            for share in outgoing.get("shares", []):
-                shocker = Shocker(
-                    shocker_id=share["id"],
-                    name=share["name"],
-                    can_shock=share["permissions"].get("shock", False),
-                    can_vibrate=share["permissions"].get("vibrate", False),
-                    can_beep=share["permissions"].get("sound", False),
-                    can_hold=share["permissions"].get("live", False),
-                    max_intensity=(
-                        share["limits"].get("intensity")
-                        if share["limits"].get("intensity") is not None
-                        else MAX_INTENSITY
-                    ),
-                    max_duration=(
-                        share["limits"].get("duration")
-                        if share["limits"].get("duration") is not None
-                        else OPENSHOCK_MAX_DURATION_MS
-                    ),
-                    paused=bool(share.get("paused", 0)),
-                    owned_by=owner_info.get("name"),
-                    shared_by=owner_info.get("id"),
-                    owner_image=owner_info.get("image"),
-                )
-                result.append(shocker)
-        return result
-
     def get_account(self) -> AccountInfo:
         """Fetch the authenticated user's account info.
 
@@ -369,49 +351,64 @@ Response received:
             )
         return AccountInfo.from_openshock_api(data)
 
-    def list_shockers(self) -> list[Shocker]:
+    def list_shockers(self, *, refresh: bool = False) -> list[Shocker]:
         """Fetch shockers from /1/shockers/own and /1/shockers/shared, merge by id, and cache.
 
-        Returns the cached list on subsequent calls.
+        Returns the cached list on subsequent calls unless ``refresh`` is true.
+
+        Args:
+            refresh: Fetch current data even when this client has a cached result.
 
         Returns:
             List of all shockers (owned and shared).
         """
-        if self._shockers is not None:
+        if self._shockers is not None and not refresh:
             return list(self._shockers.values())
 
-        owned_raw = self._request("GET", "1/shockers/own")
-        shared_raw = self._request("GET", "1/shockers/shared")
+        owned_devices = _require_dict_list(
+            self._request("GET", "1/shockers/own"),
+            context="response from /1/shockers/own",
+            nullable=True,
+        )
+        shared_owners = _require_dict_list(
+            self._request("GET", "1/shockers/shared"),
+            context="response from /1/shockers/shared",
+            nullable=True,
+        )
 
-        if not isinstance(owned_raw, list):
-            owned_raw = []
-        if not isinstance(shared_raw, list):
-            shared_raw = []
+        shockers_by_id: dict[str, Shocker] = {}
 
-        result: dict[str, Shocker] = {}
+        try:
+            for owned_device in owned_devices:
+                device_id = owned_device.get("id")
+                device_shockers = _require_dict_list(
+                    owned_device.get("shockers"), context="owned device shockers"
+                )
+                for shocker_data in device_shockers:
+                    shocker = Shocker.from_openshock_owned(shocker_data, device_id=device_id)
+                    shockers_by_id[shocker.shocker_id] = shocker
 
-        for device in owned_raw:
-            device_id = device.get("id")
-            for shocker in device.get("shockers", []):
-                shocker_obj = Shocker.from_openshock_owned(shocker, device_id=device_id)
-                result[shocker_obj.shocker_id] = shocker_obj
+            for shared_owner in shared_owners:
+                owner_info = {
+                    "name": shared_owner.get("name"),
+                    "id": shared_owner.get("id"),
+                    "image": shared_owner.get("image"),
+                }
+                shared_devices = _require_dict_list(
+                    shared_owner.get("devices"), context="shared owner devices"
+                )
+                for shared_device in shared_devices:
+                    device_id = shared_device.get("id")
+                    device_shockers = _require_dict_list(
+                        shared_device.get("shockers"), context="shared device shockers"
+                    )
+                    for shocker_data in device_shockers:
+                        shocker = Shocker.from_openshock_shared(shocker_data, owner_info, device_id=device_id)
+                        shockers_by_id.setdefault(shocker.shocker_id, shocker)
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise APIError(message=f"Unexpected OpenShock shocker response: {exc}") from exc
 
-        for owner in shared_raw:
-            owner_info = {
-                "name": owner.get("name"),
-                "id": owner.get("id"),
-                "image": owner.get("image"),
-            }
-            for device in owner.get("devices", []):
-                device_id = device.get("id")
-                for shocker in device.get("shockers", []):
-                    shocker_obj = Shocker.from_openshock_shared(shocker, owner_info, device_id=device_id)
-                    if shocker_obj.shocker_id in result:
-                        result[shocker_obj.shocker_id] = Shocker.merge(shocker_obj, result[shocker_obj.shocker_id])
-                    else:
-                        result[shocker_obj.shocker_id] = shocker_obj
-
-        self._shockers = result
+        self._shockers = shockers_by_id
         return list(self._shockers.values())
 
     def get_shocker_by_id(self, shocker_id: str) -> Shocker:
@@ -464,7 +461,7 @@ Response received:
         if not 0 <= intensity <= MAX_INTENSITY:
             raise ValueError(f"intensity must be {MIN_INTENSITY}-{MAX_INTENSITY}, got {intensity!r}")
 
-        control_type = _CONTROL_TYPE_MAP.get(operation)
+        control_type = _OPENSHOCK_CONTROL_TYPES.get(operation)
         if control_type is None:
             raise ValueError(f"unsupported operation: {operation}")
 

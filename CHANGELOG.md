@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+- Removed `OpenShockAPI.list_share_codes()` because its endpoint returned user shares instead of issued share codes.
+- Changed `PiShockAPI.delete_share()` to accept a share ID instead of a share code.
+- Removed `Shocker.merge()` in favor of provider-specific merge rules.
+
+### Added
+
+- Added `list_shockers(refresh=True)` to bypass each client's in-memory cache.
+- Added a CI job that runs the core test suite without CLI dependencies.
+
+### Fixed
+
+- PiShock now preserves share permissions and limits when it combines shared and owned shocker records.
+- PiShock now accepts the provider's 16 ms minimum duration.
+- OpenShock now prefers owned records when owned and shared responses contain the same shocker ID.
+- OpenShock now maps share, shocker, authentication, and permission errors to typed exceptions.
+- OpenShock now raises `APIError` for malformed collection responses and permission metadata.
+
 ## [0.1.2] - 2026-06-21
 
 - Changed text color on rendered badges for visual clarity on unthemed terminals

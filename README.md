@@ -5,7 +5,7 @@
 [![PyPI - Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://pypi.org/project/pyshock/)
 [![build](https://img.shields.io/github/actions/workflow/status/jwinpbe/pyshock/ci.yml?branch=main&style=for-the-badge&label=build)](https://github.com/jwinpbe/pyshock/actions/workflows/ci.yml)
 
-Python client for the new, unified PiShock API and the Openshock API.
+A synchronous Python client and CLI for controlling PiShock and OpenShock devices, based on the new unified PiShock API and the OpenShock API.
 
 Control a shocker from the terminal, or add control to your program!
 
@@ -42,7 +42,7 @@ pyshock shock 2 75
 
 Run `pyshock info 00000` for device details. Run `pyshock devices` to list devices and capabilities.
 
-Note: Due to a limitation in the Pishock API, you will need to share your own shocker with yourself in order to use it via the API.
+Note: Due to a limitation in the Pishock API, you will need to share your own shocker with yourself in order to use it via the API or CLI.
 
 ## Authentication
 
@@ -68,11 +68,13 @@ Or in one step:
 pyshock auth --key KEY
 ```
 
-PyShock stores credentials in your user configuration folder. Shockers are cached to avoid API lookups. Refresh with `pyshock devices`.
+PyShock stores credentials in your user configuration folder. Refresh with `pyshock devices`.
 
 Be advised, your API key will be stored in plain text. 
 
 ## API
+
+Each API client caches the result of `list_shockers()` for its lifetime. Call `list_shockers(refresh=True)` to fetch current data.
 
 ### PiShockAPI
 
@@ -91,9 +93,17 @@ with PiShockAPI(api_key="key") as api:
         duration=2000,  # 2 seconds
         intensity=50,
     )
+
+    api.delete_share(share_id=12345)
 ```
 
-Operations: `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds (0-15000), intensity 0-100.
+#### Operations:
+`ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds **(16-15000)**, intensity **0-100**.
+
+> [!NOTE]
+> Shockers may appear in both owned and shared provider responses.
+> 
+> PyShock returns one record per shocker ID, which combine 'owned device' metadata with permissions and limits attached to shared devices.
 
 ### OpenShockAPI
 
@@ -111,7 +121,7 @@ with OpenShockAPI(api_token="token") as api:
             intensity=50,
         )
 
-# Cookie authentication (full access, including share codes)
+# Cookie authentication (account and supported sharing endpoints)
 from http.cookiejar import MozillaCookieJar
 
 jar = MozillaCookieJar("cookies.txt")
@@ -122,13 +132,18 @@ with OpenShockAPI(session_cookie=cookie) as api:
     account = api.get_account()
     print(account.username)
 
-    for shocker in api.list_share_codes():
-        print(shocker.name, shocker.shocker_id)
-
-    api.link_share_code("ABC123456")
+    api.link_share_code("01234567-89ab-cdef-0123-456789abcdef")
 ```
 
-Operations: `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds (300-65535), intensity 0-100.
+#### Operations:
+`ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds **(300-65535)**, intensity **0-100**.
+
+---
+
+> [!NOTE]
+> PyShock validates the contents of provider responses.
+> 
+> Malformed or unexpected responses will raise APIError rather than being treated as empty results or discarded.
 
 ## Requirements
 

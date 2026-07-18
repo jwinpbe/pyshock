@@ -47,7 +47,7 @@ class TestValidateOperationParams:
     def test_duration_too_low(self) -> None:
         """Duration below minimum raises CliError."""
         with pytest.raises(CliError):
-            validate_operation_params(50, 50)
+            validate_operation_params(0.015, 50)
 
     def test_duration_too_high(self) -> None:
         """Duration above maximum raises CliError."""
@@ -284,11 +284,11 @@ class TestValidateOperationParamsProvider:
     """Tests for provider-aware duration validation."""
 
     def test_pishock_duration_range(self) -> None:
-        """PiShock: 100-15000ms accepted, outside rejected."""
-        assert validate_operation_params(100, 50, "pishock") == 100
+        """PiShock: 16-15000ms accepted, outside rejected."""
+        assert validate_operation_params(16, 50, "pishock") == 16
         assert validate_operation_params(15000, 50, "pishock") == 15000
         with pytest.raises(CliError):
-            validate_operation_params(99, 50, "pishock")
+            validate_operation_params(0.015, 50, "pishock")
         with pytest.raises(CliError):
             validate_operation_params(15001, 50, "pishock")
 
@@ -303,6 +303,6 @@ class TestValidateOperationParamsProvider:
 
     def test_default_provider_is_pishock(self) -> None:
         """When provider is not specified, defaults to pishock range."""
-        assert validate_operation_params(100, 50) == 100
+        assert validate_operation_params(16, 50) == 16
         with pytest.raises(CliError):
-            validate_operation_params(99, 50)
+            validate_operation_params(0.015, 50)

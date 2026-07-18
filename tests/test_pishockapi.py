@@ -142,8 +142,18 @@ class TestListShockers:
             api_client.list_shockers()
 
     def test_list_shockers_merges_shared_metadata(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
+        shared = _shocker_json(1, "Shared name", shared=True)
+        shared.update({
+            "CanShock": False,
+            "CanHold": False,
+            "Locked": True,
+            "Paused": True,
+            "SharePaused": True,
+            "MaxIntensity": 40,
+            "MaxDuration": 5000,
+        })
         mock_api.route("GET", "/Shockers", status=200, json=[_shocker_json(1, "Test")])
-        mock_api.route("GET", "/Share/GetShared", status=200, json=[_shocker_json(1, "Test", shared=True)])
+        mock_api.route("GET", "/Share/GetShared", status=200, json=[shared])
         shockers = api_client.list_shockers()
 
         assert len(shockers) == 1
@@ -153,6 +163,12 @@ class TestListShockers:
         assert shockers[0].is_shared is True
         assert shockers[0].share_code == "abc123"
         assert shockers[0].owned_by == "owner123"
+        assert shockers[0].can_shock is False
+        assert shockers[0].locked is True
+        assert shockers[0].paused is True
+        assert shockers[0].share_paused is True
+        assert shockers[0].max_intensity == 40
+        assert shockers[0].max_duration == 5000
 
     def test_list_shockers_shared_only(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
         mock_api.route("GET", "/Shockers", status=200, json=[])
@@ -250,6 +266,31 @@ class TestListShockersCache:
         result2 = api_client.list_shockers()
         assert result2 == result1
 
+    def test_refresh_fetches_current_shockers(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("GET", "/Shockers", status=200, json=[_shocker_json(1, "Alpha")])
+        mock_api.route("GET", "/Share/GetShared", status=200, json=[])
+        assert api_client.list_shockers()[0].name == "Alpha"
+
+        mock_api.route("GET", "/Shockers", status=200, json=[_shocker_json(1, "Updated")])
+        assert api_client.list_shockers(refresh=True)[0].name == "Updated"
+
+    @pytest.mark.parametrize(
+        ("endpoint", "payload"),
+        [("/Shockers", {}), ("/Share/GetShared", {})],
+    )
+    def test_rejects_wrong_response_shape(
+        self,
+        api_client: PiShockAPI,
+        mock_api: MockAPI,
+        endpoint: str,
+        payload: dict,
+    ) -> None:
+        mock_api.route("GET", "/Shockers", status=200, json=[])
+        mock_api.route("GET", "/Share/GetShared", status=200, json=[])
+        mock_api.route("GET", endpoint, status=200, json=payload)
+        with pytest.raises(APIError, match="Unexpected response"):
+            api_client.list_shockers()
+
 
 class TestGetShockerById:
     def test_get_shocker_by_id_success(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
@@ -307,9 +348,18 @@ class TestOperateShocker:
             api_client.operate_shocker(
                 shocker="1",
                 operation=ShockerOperation.VIBRATE,
-                duration=50,
+                duration=15,
                 intensity=50,
             )
+
+    def test_operate_shocker_accepts_minimum_duration(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("POST", "/Shockers/1", status=204)
+        api_client.operate_shocker(
+            shocker="1",
+            operation=ShockerOperation.VIBRATE,
+            duration=16,
+            intensity=50,
+        )
 
     def test_operate_shocker_invalid_intensity(self, api_client: PiShockAPI) -> None:
         with pytest.raises(ValueError, match="intensity"):
@@ -357,8 +407,9 @@ class TestShareCodes:
             api_client.add_share_codes(["a"] * 21)
 
     def test_delete_share(self, api_client: PiShockAPI, mock_api: MockAPI) -> None:
-        mock_api.route("DELETE", "/Share/abc123", status=200)
-        api_client.delete_share("abc123")
+        mock_api.route("DELETE", "/Share/40", status=204)
+        api_client.delete_share(40)
+        assert mock_api._last_request["path"] == "/Share/40"
 
 
 class TestOperateShockerValidation:

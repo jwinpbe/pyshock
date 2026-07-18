@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
+import platformdirs
 import pytest
 from rich.console import Console
 
@@ -19,6 +21,21 @@ if TYPE_CHECKING:
 from pyshock.cli.config import Config
 from pyshock.cli.context import _current_account_id, json_mode
 from pyshock.pishockapi import PiShockAPI
+
+
+@pytest.fixture(autouse=True)
+def _clean_config() -> Generator[None]:
+    """Isolate CLI tests from the user's persisted configuration."""
+    from pyshock.cli.config import reset_config_cache
+
+    config_path = Path(platformdirs.user_config_dir("PyShock")) / "config.json"
+    if config_path.exists():
+        config_path.unlink()
+    reset_config_cache()
+    yield
+    if config_path.exists():
+        config_path.unlink()
+    reset_config_cache()
 
 
 @pytest.fixture

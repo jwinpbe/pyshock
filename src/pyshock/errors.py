@@ -188,5 +188,5 @@ class SessionOnlyError(APIError):
 class TokenAuthNotSupportedError(APIError):
     """Operation requires cookie authentication, not available with API token."""
 
-    message = "This operation requires cookie authentication. Re-run 'pyshock init' with browser cookie auth."
+    message = "This operation requires OpenShock session-cookie authentication."
     status_code = 403

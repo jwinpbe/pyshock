@@ -78,13 +78,22 @@ class TestCodeDelete:
     """Tests for code_delete."""
 
     def test_delete_calls_api_and_prints_success(self, mock_pishock_api: MagicMock) -> None:
-        """A valid code calls api.delete_share and prints success."""
+        """A valid code resolves and deletes its numeric share id."""
+        mock_pishock_api.get_shocker_by_share_code.return_value = _SHARED_SHOCKER
         with patch("pyshock.cli.share_code.console") as mock_console:
             code_delete("ABC123", mock_pishock_api)
 
-        mock_pishock_api.delete_share.assert_called_once_with("ABC123")
+        mock_pishock_api.get_shocker_by_share_code.assert_called_once_with("ABC123")
+        mock_pishock_api.delete_share.assert_called_once_with(1)
         mock_console.print.assert_called_once()
         assert "deleted successfully" in mock_console.print.call_args.args[0]
+
+    def test_delete_missing_share_id_raises(self, mock_pishock_api: MagicMock) -> None:
+        mock_pishock_api.get_shocker_by_share_code.return_value = _NON_SHARED_SHOCKER
+        with pytest.raises(CliError, match="did not return an id"):
+            code_delete("ABC123", mock_pishock_api)
+
+        mock_pishock_api.delete_share.assert_not_called()
 
 
 class TestCodeList:

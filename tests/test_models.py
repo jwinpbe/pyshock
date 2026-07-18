@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from pyshock.models.account import AccountInfo
@@ -97,11 +99,8 @@ class TestShocker:
             max_intensity=50,
         )
 
-        try:
+        with pytest.raises(FrozenInstanceError):
             shocker.name = "Other"  # type: ignore[attr-defined]
-            assert False, "Should not be able to modify frozen dataclass"
-        except Exception:
-            pass
 
     def test_str_owned(self) -> None:
         shocker = Shocker(

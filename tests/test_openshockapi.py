@@ -139,6 +139,25 @@ class TestOpenShockAPIRequest:
             api_client._request("POST", "2/shockers/control")
         assert exc_info.value.required_permission == "shockers.use"
 
+    def test_request_403_ignores_malformed_permission_metadata(
+        self, api_client: OpenShockAPI, mock_api: MockAPI
+    ) -> None:
+        mock_api.route(
+            "POST",
+            "/2/shockers/control",
+            status=403,
+            json={
+                "type": "Authorization.Token.PermissionMissing",
+                "detail": "Missing permission",
+                "requiredPermission": 1,
+                "grantedPermissions": ["shockers.read", 2],
+            },
+        )
+        with pytest.raises(PermissionMissingError) as exc_info:
+            api_client._request("POST", "2/shockers/control")
+        assert exc_info.value.required_permission is None
+        assert exc_info.value.granted_permissions == []
+
     def test_request_404_raises(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
         mock_api.route(
             "GET",
@@ -162,6 +181,11 @@ class TestOpenShockAPIRequest:
     def test_request_invalid_json(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
         mock_api.route("GET", "/1", status=200, text="not json")
         with pytest.raises(APIError, match="Invalid JSON"):
+            api_client._request("GET", "1")
+
+    def test_request_non_object_error(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("GET", "/1", status=500, json=[])
+        with pytest.raises(APIError, match="Unexpected list error response"):
             api_client._request("GET", "1")
 
 
@@ -216,7 +240,7 @@ class TestListShockers:
         assert shockers[0].is_owned is False
         assert shockers[0].owned_by == "owner123"
 
-    def test_list_shockers_merged(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
+    def test_owned_shocker_wins_duplicate(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
         sid = "019df66b-e20d-7068-9fbc-ff152fc2dddc"
         mock_api.route("GET", "/1/shockers/own", status=200, json=_wrap([_owned_device(sid)]))
         mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap([_shared_owner(sid)]))
@@ -224,9 +248,9 @@ class TestListShockers:
 
         assert len(shockers) == 1
 
-        assert shockers[0].is_owned is False
-        assert shockers[0].is_shared is True
-        assert shockers[0].owned_by == "owner123"
+        assert shockers[0].is_owned is True
+        assert shockers[0].is_shared is False
+        assert shockers[0].owned_by is None
         assert shockers[0].device_id is not None
         assert shockers[0].model is not None
         assert shockers[0].rf_id is not None
@@ -246,6 +270,54 @@ class TestListShockers:
         result2 = api_client.list_shockers()
         assert result2 is not result1  # different list object
         assert result2 == result1  # same content
+
+    def test_list_shockers_refreshes(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("GET", "/1/shockers/own", status=200, json=_wrap([_owned_device()]))
+        mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap([]))
+        assert api_client.list_shockers()[0].name == "Test Shocker"
+
+        updated = _owned_device()
+        updated["shockers"][0]["name"] = "Updated"
+        mock_api.route("GET", "/1/shockers/own", status=200, json=_wrap([updated]))
+
+        assert api_client.list_shockers(refresh=True)[0].name == "Updated"
+
+    def test_list_shockers_accepts_null_data(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("GET", "/1/shockers/own", status=200, json=_wrap(None))
+        mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap(None))
+        assert api_client.list_shockers() == []
+
+    def test_list_shockers_rejects_wrong_shape(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
+        mock_api.route("GET", "/1/shockers/own", status=200, json=_wrap({}))
+        mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap([]))
+        with pytest.raises(APIError, match="Unexpected response from /1/shockers/own"):
+            api_client.list_shockers()
+
+    def test_list_shockers_rejects_malformed_nested_collection(
+        self, api_client: OpenShockAPI, mock_api: MockAPI
+    ) -> None:
+        mock_api.route(
+            "GET",
+            "/1/shockers/own",
+            status=200,
+            json=_wrap([{"id": "device-id", "shockers": None}]),
+        )
+        mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap([]))
+        with pytest.raises(APIError, match="Unexpected owned device shockers response"):
+            api_client.list_shockers()
+
+    def test_list_shockers_translates_model_validation_error(
+        self, api_client: OpenShockAPI, mock_api: MockAPI
+    ) -> None:
+        mock_api.route(
+            "GET",
+            "/1/shockers/own",
+            status=200,
+            json=_wrap([{"id": "device-id", "shockers": [{}]}]),
+        )
+        mock_api.route("GET", "/1/shockers/shared", status=200, json=_wrap([]))
+        with pytest.raises(APIError, match="Unexpected OpenShock shocker response"):
+            api_client.list_shockers()
 
 
 class TestGetShockerById:
