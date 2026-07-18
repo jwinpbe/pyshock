@@ -7,7 +7,7 @@ from importlib.util import find_spec
 from sys import argv, stderr
 
 if find_spec("cyclopts") is None or find_spec("platformdirs") is None or find_spec("rich") is None:
-    print(  # noqa: T201
+    print(  # ruff:ignore[print]
         "\n\033[1;91mError:\033[0m PyShock is missing components needed for the program to run!"
         "\nRun the following command to install the missing components:\n"
         '\033[1muv tool install "pyshock[cli]"\033[0m\n',

@@ -108,7 +108,7 @@ def _handle_error(response: niquests.Response) -> APIError:
     method = request.method if request is not None else None
     path = request.path_url if request is not None else ""
 
-    if status == 404:  # noqa: PLR2004
+    if status == 404:  # ruff:ignore[magic-value-comparison]
         resource = path.split("/", 2)[1]  # ope just gonna squeeze by ya there bud
         error_cls = _404_NOT_FOUND_MAP.get(resource)
         if error_cls is not None:
@@ -230,7 +230,7 @@ class PiShockAPI:
             resp_body,
         )
 
-        if response.status_code is not None and response.status_code >= 400:  # noqa: PLR2004
+        if response.status_code is not None and response.status_code >= 400:  # ruff:ignore[magic-value-comparison]
             raise _handle_error(response)
 
         if not response.text:
@@ -393,7 +393,7 @@ Response received:
         """
         if not codes:
             raise NoSharesProvidedError()
-        if len(codes) > 20:  # noqa: PLR2004
+        if len(codes) > 20:  # ruff:ignore[magic-value-comparison]
             raise TooManySharesError()
 
         self._request("PUT", "Share", body={"Shares": codes})

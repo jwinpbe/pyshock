@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pyshock.models.shocker import Shocker
 
 
-def auth(  # noqa: PLR0915
+def auth(  # ruff:ignore[too-many-statements]
     *,
     force: bool = False,
     key: Annotated[str | None, Parameter(name="key")] = None,

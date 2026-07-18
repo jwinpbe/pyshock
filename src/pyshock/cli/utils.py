@@ -37,7 +37,7 @@ def validate_duration(dur: float, *, min_ms: int, max_ms: int) -> int:
 
     Durations < 16 are treated as seconds and converted to milliseconds.
     """
-    if dur < 16:  # noqa: PLR2004
+    if dur < 16:  # ruff:ignore[magic-value-comparison]
         dur = dur * 1000
     if dur < min_ms or dur > max_ms:
         raise CliError(f"Duration must be {min_ms}-{max_ms}ms (or {min_ms / 1000:g}-{max_ms / 1000:g}s).")

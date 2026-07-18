@@ -288,7 +288,7 @@ class OpenShockAPI:
             elapsed_ms,
             resp_body,
         )
-        if response.status_code is not None and response.status_code >= 400:  # noqa: PLR2004
+        if response.status_code is not None and response.status_code >= 400:  # ruff:ignore[magic-value-comparison]
             raise _handle_openshock_error(response)
 
         return self._parse_response(response)
@@ -381,9 +381,7 @@ Response received:
         try:
             for owned_device in owned_devices:
                 device_id = owned_device.get("id")
-                device_shockers = _require_dict_list(
-                    owned_device.get("shockers"), context="owned device shockers"
-                )
+                device_shockers = _require_dict_list(owned_device.get("shockers"), context="owned device shockers")
                 for shocker_data in device_shockers:
                     shocker = Shocker.from_openshock_owned(shocker_data, device_id=device_id)
                     shockers_by_id[shocker.shocker_id] = shocker
@@ -394,9 +392,7 @@ Response received:
                     "id": shared_owner.get("id"),
                     "image": shared_owner.get("image"),
                 }
-                shared_devices = _require_dict_list(
-                    shared_owner.get("devices"), context="shared owner devices"
-                )
+                shared_devices = _require_dict_list(shared_owner.get("devices"), context="shared owner devices")
                 for shared_device in shared_devices:
                     device_id = shared_device.get("id")
                     device_shockers = _require_dict_list(
