@@ -144,7 +144,7 @@ with OpenShockAPI(session_cookie=cookie) as api:
 > [!NOTE]
 > PyShock validates the contents of provider responses.
 > 
-> Malformed or unexpected responses will raise `APIError` rather than being treated as empty results or discarded.
+> Malformed / unexpected responses will raise `APIError` rather than being treated as empty results or discarded.
 
 ## Requirements
 
