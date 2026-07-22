@@ -21,14 +21,94 @@ from pyshock.cli.display import (
     shocker_json,
 )
 from pyshock.errors import APIError, CliError, NotAuthorizedError
-from pyshock.openshockapi import OpenShockAPI
-from pyshock.pishockapi import PiShockAPI
+from pyshock.providers import PROVIDERS
 
 if TYPE_CHECKING:
+    from pyshock.cli.config import Config
+    from pyshock.models.account import AccountInfo
     from pyshock.models.shocker import Shocker
 
 
-def auth(  # ruff:ignore[too-many-statements]
+def _verify_credentials_with_retry(
+    credential: str | None,
+    provider: str | None,
+    *,
+    is_tty: bool,
+    key: str | None,
+) -> tuple[str, str, dict[str, str]]:
+    """Verify API credentials with retry on NotAuthorizedError.
+
+    Returns (credential, provider, creds) on success.
+    Raises SystemExit(1) after max attempts.
+    """
+    from pyshock.cli.commands.init_creds import prompt_credentials
+
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        if credential is None:
+            credential, provider = prompt_credentials(is_tty=is_tty)
+        spec = PROVIDERS.get(provider or "pishock")
+        if spec is None:
+            console_err.print(f"[red]Unknown provider '{provider or 'pishock'}'.[/red]")
+            raise SystemExit(1) from None
+        creds = {spec.cred_key: credential}
+        try:
+            with (
+                spec.client_cls(**creds) as api,
+                console.status("Verifying credentials...", spinner="bouncingBar"),
+            ):
+                api.get_account()
+            return credential, provider or "pishock", creds
+        except NotAuthorizedError as e:
+            if key is not None:
+                console_err.print(f"[red]{e.message}[/red]")
+                raise SystemExit(1) from None
+            if attempt >= max_attempts:
+                console_err.print("[bold red]Failed to authorize after 3 attempts[/bold red]")
+                raise SystemExit(1) from None
+            console_err.print(f"[red]{e.message}[/red]")
+            console_err.print(f"[yellow]Attempt {attempt}/{max_attempts} failed, please try again.[/yellow]")
+            credential = None
+    raise SystemExit(1)
+
+
+def _fetch_shockers(creds: dict[str, str], provider: str) -> list[Shocker]:
+    """Build API client and fetch shockers from the provider.
+
+    Args:
+        creds: Keyword arguments to pass to the client constructor.
+        provider: Provider key (e.g. "pishock" / "openshock").
+
+    Returns:
+        List of shockers from the API.
+
+    Raises:
+        SystemExit(1): If the provider is unknown (corrupted config).
+    """
+    spec = PROVIDERS.get(provider)
+    if spec is None:
+        console_err.print(f"[red]Unknown provider '{provider}'.[/red]")
+        raise SystemExit(1) from None
+    with (
+        spec.client_cls(**creds) as api,
+        console.status(
+            f"Credentials verified! Fetching information from {spec.label} API...",
+            spinner="bouncingBar",
+        ),
+    ):
+        return list(api.list_shockers())
+
+
+def _register_shockers(config: Config, account_id: str, all_shockers: list[Shocker]) -> None:
+    """Write shockers to the config and auto-set a default if there's only one."""
+    config.refresh_account_shockers(account_id, all_shockers)
+    all_shocker_ids = list(config.shocker_index.keys())
+    if len(all_shocker_ids) == 1 and not config.default_shocker_id:
+        config.default_shocker_id = all_shocker_ids[0]
+    config.save()
+
+
+def auth(
     *,
     force: bool = False,
     key: Annotated[str | None, Parameter(name="key")] = None,
@@ -43,7 +123,6 @@ def auth(  # ruff:ignore[too-many-statements]
 
     from pyshock.cli.commands.init_creds import (
         fix_account_prefix,
-        prompt_credentials,
         resolve_account_id,
         resolve_credential,
     )
@@ -70,46 +149,15 @@ def auth(  # ruff:ignore[too-many-statements]
 
         render_init_welcome()
 
-    api_cls = PiShockAPI if provider == "pishock" else OpenShockAPI
+    credential, provider, creds = _verify_credentials_with_retry(credential, provider, is_tty=is_tty, key=key)
 
-    creds: dict = {}
-    max_attempts = 3
-    for attempt in range(1, max_attempts + 1):
-        if credential is None:
-            credential, provider = prompt_credentials(is_tty=is_tty)
-            api_cls = PiShockAPI if provider == "pishock" else OpenShockAPI
-        creds = {"api_key": credential} if provider == "pishock" else {"api_token": credential}
-        try:
-            with (
-                api_cls(**creds) as api,
-                console.status("Verifying credentials...", spinner="bouncingBar"),
-            ):
-                api.get_account()
-            break
-        except NotAuthorizedError as e:
-            if attempt >= max_attempts:
-                console_err.print("[bold red]Failed to authorize after 3 attempts[/bold red]")
-                raise SystemExit(1) from None
-            console_err.print(f"[red]{e.message}[/red]")
-            console_err.print(f"[yellow]Attempt {attempt}/{max_attempts} failed, please try again.[/yellow]")
-            if key is None:
-                credential = None
-
-    account_id = fix_account_prefix(config, account_id, provider or "pishock", user_provided_id=user_provided_id)
+    account_id = fix_account_prefix(config, account_id, provider, user_provided_id=user_provided_id)
 
     if account_id in config.accounts:
         config.remove_account(account_id)
-    config.add_account(account_id, provider or "pishock", **creds)
+    config.add_account(account_id, provider, **creds)
 
-    label = "PiShock" if provider == "pishock" else "OpenShock"
-    with (
-        api_cls(**creds) as api,
-        console.status(
-            f"Credentials verified! Fetching information from {label} API...",
-            spinner="bouncingBar",
-        ),
-    ):
-        all_shockers = api.list_shockers()
+    all_shockers = _fetch_shockers(creds, provider)
 
     if not all_shockers:
         config.save()
@@ -117,13 +165,9 @@ def auth(  # ruff:ignore[too-many-statements]
             console.print("[yellow]No shockers found.[/yellow]")
         return
 
-    config.refresh_account_shockers(account_id, all_shockers)
+    _register_shockers(config, account_id, all_shockers)
 
     all_shocker_ids = list(config.shocker_index.keys())
-    if len(all_shocker_ids) == 1 and not config.default_shocker_id:
-        config.default_shocker_id = all_shocker_ids[0]
-
-    config.save()
 
     if json_mode.get():
         print_output({"shockers": [shocker_json(s) for s in all_shockers]})
@@ -269,6 +313,25 @@ def default(shocker_id: str | None = None, /, *, unset: bool = False) -> None:
     console.print(f"[green]Default shocker set to [bold]{shocker_id}[/bold].[/green]")
 
 
+def _verify_one_account(acct_id: str) -> tuple[AccountInfo, str]:
+    """Build a session for one account and fetch its account info.
+
+    Returns (account_info, provider). Raises on API/auth errors.
+    """
+    session = utils.get_session_for_account(acct_id)
+    with session.api, console.status(f"Verifying [bold]{acct_id}[/bold]...", spinner="bouncingBar"):
+        account = session.api.get_account()
+    return account, session.provider
+
+
+def _render_verify_ok(account: AccountInfo, provider: str, acct_id: str) -> None:
+    """Render a successful verification for one account."""
+    render_verify_panel(account, provider, acct_id)
+    spec = PROVIDERS.get(provider)
+    display_label = spec.label if spec else provider.capitalize()
+    console.print(f"{display_label} API reports credentials OK for [bold]{acct_id}[/bold].")
+
+
 def verify(account_id: Annotated[str | None, Parameter(name="account")] = None) -> None:
     """Verify API credentials.
 
@@ -281,52 +344,44 @@ def verify(account_id: Annotated[str | None, Parameter(name="account")] = None) 
     console.print()
 
     if account_id is not None:
-        entry = config.get_account(account_id)
-        if entry is None:
+        if config.get_account(account_id) is None:
             console_err.print(f"[red]Account '{account_id}' not found.[/red]")
             raise SystemExit(1)
-        provider = entry.get("provider", "pishock")
-        api = utils.get_api_for_account(account_id)
-        with api, console.status(f"Verifying [bold]{account_id}[/bold]...", spinner="bouncingBar"):
-            account = api.get_account()
+        session = utils.get_session_for_account(account_id)
+        with session.api, console.status(f"Verifying [bold]{account_id}[/bold]...", spinner="bouncingBar"):
+            account = session.api.get_account()
         if json_mode.get():
             print_output({
                 "ok": True,
                 "account_id": account_id,
+                "provider": session.provider,
+                "username": account.username,
+                "user_id": account.user_id,
+            })
+        else:
+            _render_verify_ok(account, session.provider, account_id)
+        return
+
+    results: list[dict] = []
+    for acct_id in config.accounts:
+        try:
+            account, provider = _verify_one_account(acct_id)
+        except (APIError, CliError, NotAuthorizedError, RequestException) as e:
+            if json_mode.get():
+                results.append({"ok": False, "account_id": acct_id, "error": str(e)})
+            else:
+                console_err.print(f"[red]Verification failed for [bold]{acct_id}[/bold]: {e}[/red]")
+            continue
+        if json_mode.get():
+            results.append({
+                "ok": True,
+                "account_id": acct_id,
                 "provider": provider,
                 "username": account.username,
                 "user_id": account.user_id,
             })
         else:
-            render_verify_panel(account, provider, account_id)
-            label = "PiShock" if provider == "pishock" else "OpenShock"
-            console.print(f"{label} API reports credentials OK for [bold]{account_id}[/bold].")
-        return
-
-    results: list[dict] = []
-    for acct_id, entry in config.accounts.items():
-        prov = entry.get("provider", "pishock")
-        api = utils.get_api_for_account(acct_id)
-        try:
-            with api, console.status(f"Verifying [bold]{acct_id}[/bold]...", spinner="bouncingBar"):
-                account = api.get_account()
-            if json_mode.get():
-                results.append({
-                    "ok": True,
-                    "account_id": acct_id,
-                    "provider": prov,
-                    "username": account.username,
-                    "user_id": account.user_id,
-                })
-            else:
-                render_verify_panel(account, prov, acct_id)
-                label = "PiShock" if prov == "pishock" else "OpenShock"
-                console.print(f"{label} API reports credentials OK for [bold]{acct_id}[/bold].")
-        except (APIError, NotAuthorizedError, RequestException) as e:
-            if json_mode.get():
-                results.append({"ok": False, "account_id": acct_id, "error": str(e)})
-            else:
-                console_err.print(f"[red]Verification failed for [bold]{acct_id}[/bold]: {e}[/red]")
+            _render_verify_ok(account, provider, acct_id)
 
     if json_mode.get():
         print_output(results)
@@ -340,9 +395,9 @@ def devices() -> None:
     all_shockers: list[tuple[str, Shocker]] = []
 
     for acct_id in config.accounts:
-        api = utils.get_api_for_account(acct_id)
-        with api, console.status(f"Querying [bold]{acct_id}[/bold]...", spinner="bouncingBar"):
-            shocker_list = api.list_shockers()
+        session = utils.get_session_for_account(acct_id)
+        with session.api, console.status(f"Querying [bold]{acct_id}[/bold]...", spinner="bouncingBar"):
+            shocker_list = session.api.list_shockers()
         config.refresh_account_shockers(acct_id, shocker_list)
         all_shockers.extend([(acct_id, s) for s in shocker_list])
 

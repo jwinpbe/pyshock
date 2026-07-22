@@ -15,13 +15,11 @@ __all__ = [
     "NotAuthorizedError",
     "OperationNotAllowedError",
     "PermissionMissingError",
-    "SessionOnlyError",
     "ShareAlreadyClaimedError",
     "ShareLockedError",
     "ShareNotFoundError",
     "ShockerNotFoundError",
     "ShockerPausedError",
-    "TokenAuthNotSupportedError",
     "TooManySharesError",
 ]
 
@@ -176,17 +174,3 @@ class PermissionMissingError(APIError):
         else:
             msg = self.message
         super().__init__(message=msg, status_code=403)
-
-
-class SessionOnlyError(APIError):
-    """Operation requires session authentication, not available with API token."""
-
-    message = "This operation requires session authentication. Use the OpenShock web interface."
-    status_code = 403
-
-
-class TokenAuthNotSupportedError(APIError):
-    """Operation requires cookie authentication, not available with API token."""
-
-    message = "This operation requires OpenShock session-cookie authentication."
-    status_code = 403

@@ -86,6 +86,15 @@ class TestOpenShockAPIInit:
     def test_sets_headers(self, api_client: OpenShockAPI) -> None:
         assert api_client._session.headers["OpenShockToken"] == "test_token"
 
+    @pytest.mark.parametrize("api_token", [None, ""])
+    def test_rejects_missing_api_token(self, api_token: str | None) -> None:
+        with pytest.raises(ValueError, match="api_token must not be empty"):
+            OpenShockAPI(api_token)  # type: ignore[arg-type]
+
+    def test_rejects_removed_session_cookie(self) -> None:
+        with pytest.raises(TypeError):
+            OpenShockAPI(session_cookie="test_cookie")  # type: ignore[call-arg]
+
     def test_close(self, api_client: OpenShockAPI) -> None:
         api_client.close()
 
@@ -195,16 +204,14 @@ class TestGetAccount:
             "GET",
             "/1/users/self",
             status=200,
-            json=_wrap(
-                {
-                    "id": "019df66b-08b2-71fd-b0d8-4cb650725974",
-                    "name": "testuser",
-                    "email": "test@example.com",
-                    "image": "https://gravatar.com/test",
-                    "roles": [],
-                    "rank": "User",
-                }
-            ),
+            json=_wrap({
+                "id": "019df66b-08b2-71fd-b0d8-4cb650725974",
+                "name": "testuser",
+                "email": "test@example.com",
+                "image": "https://gravatar.com/test",
+                "roles": [],
+                "rank": "User",
+            }),
         )
         account = api_client.get_account()
         assert account.user_id == "019df66b-08b2-71fd-b0d8-4cb650725974"
@@ -306,9 +313,7 @@ class TestListShockers:
         with pytest.raises(APIError, match="Unexpected owned device shockers response"):
             api_client.list_shockers()
 
-    def test_list_shockers_translates_model_validation_error(
-        self, api_client: OpenShockAPI, mock_api: MockAPI
-    ) -> None:
+    def test_list_shockers_translates_model_validation_error(self, api_client: OpenShockAPI, mock_api: MockAPI) -> None:
         mock_api.route(
             "GET",
             "/1/shockers/own",
@@ -400,6 +405,20 @@ class TestOperateShocker:
                 operation=ShockerOperation.SHOCK,
                 duration=1000,
                 intensity=150,
+            )
+
+    def test_operate_shocker_unsupported_operation(self, api_client: OpenShockAPI) -> None:
+        from enum import Enum
+
+        class FakeOperation(Enum):
+            UNKNOWN = "unknown"
+
+        with pytest.raises(ValueError, match="unsupported operation"):
+            api_client.operate_shocker(
+                shocker="1",
+                operation=FakeOperation.UNKNOWN,  # type: ignore[arg-type]
+                duration=1000,
+                intensity=50,
             )
 
 

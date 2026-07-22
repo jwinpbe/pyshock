@@ -7,16 +7,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyshock.cli.config import Config
-from pyshock.cli.context import _current_account_id
 from pyshock.cli.utils import (
-    _current_api_client,
+    Session,
     confirm_operation,
-    get_api,
-    get_api_for_account,
+    get_session_for_account,
     resolve_shocker_id,
     send_operation,
-    set_api_client,
-    validate_operation_params,
+    validate_duration,
 )
 from pyshock.errors import CliError
 from pyshock.models.operation import ShockerOperation
@@ -30,62 +27,29 @@ class TestValidateDuration:
 
     def test_seconds_to_milliseconds(self) -> None:
         """Durations below 16 are treated as seconds and converted to ms."""
-        assert validate_operation_params(5, 50) == 5000
+        assert validate_duration(5, "pishock") == 5000
 
     def test_milliseconds_passthrough(self) -> None:
         """Durations at or above 16 are treated as milliseconds directly."""
-        assert validate_operation_params(5000, 50) == 5000
+        assert validate_duration(5000, "pishock") == 5000
 
 
-class TestValidateOperationParams:
-    """Tests for operation parameter validation."""
+class TestValidateDurationRange:
+    """Tests for duration validation."""
 
     def test_valid(self) -> None:
-        """Valid duration and intensity pass through unchanged."""
-        assert validate_operation_params(5000, 50) == 5000
+        """Valid duration passes through unchanged."""
+        assert validate_duration(5000, "pishock") == 5000
 
     def test_duration_too_low(self) -> None:
         """Duration below minimum raises CliError."""
         with pytest.raises(CliError):
-            validate_operation_params(0.015, 50)
+            validate_duration(0.015, "pishock")
 
     def test_duration_too_high(self) -> None:
         """Duration above maximum raises CliError."""
         with pytest.raises(CliError):
-            validate_operation_params(20000, 50)
-
-    def test_intensity_too_low(self) -> None:
-        """Negative intensity raises CliError."""
-        with pytest.raises(CliError):
-            validate_operation_params(5000, -1)
-
-    def test_intensity_too_high(self) -> None:
-        """Intensity above 100 raises CliError."""
-        with pytest.raises(CliError):
-            validate_operation_params(5000, 101)
-
-
-class TestGetSetApiClient:
-    """Tests for API client context variable management."""
-
-    def test_set_and_get(self) -> None:
-        """Setting an API client makes it available via get_api."""
-        mock = MagicMock()
-        token = _current_api_client.set(mock)
-        try:
-            assert get_api() is mock
-        finally:
-            _current_api_client.reset(token)
-
-    def test_get_no_client_raises(self) -> None:
-        """get_api raises LookupError when no client has been set."""
-        token = _current_api_client.set(MagicMock())
-        _current_api_client.reset(token)
-        try:
-            with pytest.raises(LookupError):
-                get_api()
-        finally:
-            _current_api_client.set(MagicMock())
+            validate_duration(20000, "pishock")
 
 
 class TestResolveShockerId:
@@ -159,8 +123,7 @@ class TestSendOperation:
         mock_config: Config,
     ) -> None:
         """When shocker_id is provided, it is used directly."""
-        _current_account_id.set("pishock_1")
-        set_api_client(mock_pishock_api)
+        session = Session(api=mock_pishock_api, account_id="pishock_1", provider="pishock")
         with (
             patch("pyshock.cli.utils.get_config", return_value=mock_config),
             patch("pyshock.cli.utils.resolve_shocker_id"),
@@ -168,7 +131,7 @@ class TestSendOperation:
             patch("pyshock.cli.utils.json_mode", MagicMock(get=lambda: False)),
             patch("pyshock.cli.display.render_operation_result"),
         ):
-            send_operation("abc123", ShockerOperation.SHOCK, 5000, 50)
+            send_operation(session, "abc123", ShockerOperation.SHOCK, 5000, 50)
 
         mock_pishock_api.operate_shocker.assert_called_once_with(
             shocker="abc123",
@@ -183,8 +146,7 @@ class TestSendOperation:
         mock_config: Config,
     ) -> None:
         """When shocker_id is None, resolve_shocker_id provides the target."""
-        _current_account_id.set("pishock_1")
-        set_api_client(mock_pishock_api)
+        session = Session(api=mock_pishock_api, account_id="pishock_1", provider="pishock")
         with (
             patch("pyshock.cli.utils.get_config", return_value=mock_config),
             patch("pyshock.cli.utils.resolve_shocker_id", return_value="def456"),
@@ -192,7 +154,7 @@ class TestSendOperation:
             patch("pyshock.cli.utils.json_mode", MagicMock(get=lambda: False)),
             patch("pyshock.cli.display.render_operation_result"),
         ):
-            send_operation(None, ShockerOperation.SHOCK, 5000, 50)
+            send_operation(session, None, ShockerOperation.SHOCK, 5000, 50)
 
         mock_pishock_api.operate_shocker.assert_called_once_with(
             shocker="def456",
@@ -231,8 +193,8 @@ class TestConfirmOperation:
             assert exc_info.value.code == 0
 
 
-class TestGetApiForAccount:
-    """Tests for get_api_for_account."""
+class TestGetSessionForAccount:
+    """Tests for get_session_for_account."""
 
     def _make_config(self, accounts: dict) -> Config:
         config = Config()
@@ -240,33 +202,38 @@ class TestGetApiForAccount:
         return config
 
     def test_get_pishock_api(self) -> None:
-        """PiShock account returns PiShockAPI instance."""
+        """PiShock account returns Session with PiShockAPI instance."""
         config = self._make_config({
             "pishock_1": {"provider": "pishock", "api_key": "test_key"},
         })
         with patch("pyshock.cli.utils.get_config", return_value=config):
-            api = get_api_for_account("pishock_1")
-        assert isinstance(api, PiShockAPI)
+            session = get_session_for_account("pishock_1")
+        assert isinstance(session.api, PiShockAPI)
+        assert session.provider == "pishock"
+        assert session.account_id == "pishock_1"
+        session.api.close()
 
     def test_get_openshock_api(self) -> None:
-        """OpenShock account returns OpenShockAPI instance."""
+        """OpenShock account returns Session with OpenShockAPI instance."""
         config = self._make_config({
             "openshock_1": {"provider": "openshock", "api_token": "test_token"},
         })
         with patch("pyshock.cli.utils.get_config", return_value=config):
-            api = get_api_for_account("openshock_1")
-        assert isinstance(api, OpenShockAPI)
+            session = get_session_for_account("openshock_1")
+        assert isinstance(session.api, OpenShockAPI)
+        assert session.provider == "openshock"
+        assert session.account_id == "openshock_1"
+        session.api.close()
 
-    def test_get_openshock_missing_token_raises(self) -> None:
-        """OpenShock account without api_token raises CliError."""
+    def test_legacy_openshock_cookie_account_requires_reauthentication(self) -> None:
         config = self._make_config({
-            "openshock_1": {"provider": "openshock"},
+            "openshock_1": {"provider": "openshock", "session_cookie": "obsolete"},
         })
         with (
             patch("pyshock.cli.utils.get_config", return_value=config),
-            pytest.raises(CliError, match="missing OpenShock API token"),
+            pytest.raises(CliError, match=r"requires an API token.*Re-authenticate"),
         ):
-            get_api_for_account("openshock_1")
+            get_session_for_account("openshock_1")
 
     def test_unknown_provider_raises(self) -> None:
         """Unknown provider raises CliError."""
@@ -277,32 +244,26 @@ class TestGetApiForAccount:
             patch("pyshock.cli.utils.get_config", return_value=config),
             pytest.raises(CliError, match="Unknown provider"),
         ):
-            get_api_for_account("weird_1")
+            get_session_for_account("weird_1")
 
 
-class TestValidateOperationParamsProvider:
+class TestValidateDurationProvider:
     """Tests for provider-aware duration validation."""
 
     def test_pishock_duration_range(self) -> None:
         """PiShock: 16-15000ms accepted, outside rejected."""
-        assert validate_operation_params(16, 50, "pishock") == 16
-        assert validate_operation_params(15000, 50, "pishock") == 15000
+        assert validate_duration(16, "pishock") == 16
+        assert validate_duration(15000, "pishock") == 15000
         with pytest.raises(CliError):
-            validate_operation_params(0.015, 50, "pishock")
+            validate_duration(0.015, "pishock")
         with pytest.raises(CliError):
-            validate_operation_params(15001, 50, "pishock")
+            validate_duration(15001, "pishock")
 
     def test_openshock_duration_range(self) -> None:
         """OpenShock: 300-65535ms accepted, outside rejected."""
-        assert validate_operation_params(300, 50, "openshock") == 300
-        assert validate_operation_params(65535, 50, "openshock") == 65535
+        assert validate_duration(300, "openshock") == 300
+        assert validate_duration(65535, "openshock") == 65535
         with pytest.raises(CliError):
-            validate_operation_params(299, 50, "openshock")
+            validate_duration(299, "openshock")
         with pytest.raises(CliError):
-            validate_operation_params(65536, 50, "openshock")
-
-    def test_default_provider_is_pishock(self) -> None:
-        """When provider is not specified, defaults to pishock range."""
-        assert validate_operation_params(16, 50) == 16
-        with pytest.raises(CliError):
-            validate_operation_params(0.015, 50)
+            validate_duration(65536, "openshock")

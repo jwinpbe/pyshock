@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import pytest
 
 from pyshock.cli.config import Config
-from pyshock.cli.context import _current_account_id
+from pyshock.cli.utils import Session
 from pyshock.models.account import AccountInfo
 from pyshock.models.operation import ShockerOperation
 from pyshock.models.shocker import Shocker
@@ -75,14 +75,18 @@ def _execute_via_parse(
 
     Mimics _launcher's dispatch: parse_args -> with api: -> command(*args, **kwargs).
     """
-    command, bound, _ignored = app.parse_args(
+    command, bound, ignored = app.parse_args(
         cmd_str,
         print_error=False,
         exit_on_error=False,
     )
 
+    extra: dict[str, Any] = {}
+    if "session" in ignored:
+        extra["session"] = Session(api=mock_api, account_id="pishock_1", provider="pishock")
+
     with mock_api:
-        command(*bound.args, **bound.kwargs)  # type: ignore[operator]
+        command(*bound.args, **bound.kwargs, **extra)  # type: ignore[operator]
 
     return command, bound
 
@@ -97,10 +101,8 @@ class TestIntegration:
         config_with_account: Config,
     ) -> None:
         """Parse 'shock 2 75 --force' and verify operate_shocker is called with correct params."""
-        _current_account_id.set("pishock_1")
 
         with (
-            patch("pyshock.cli.utils.get_api", return_value=mock_api),
             patch("pyshock.cli.utils.get_config", return_value=config_with_account),
             patch("pyshock.cli.config.get_config", return_value=config_with_account),
             patch("pyshock.cli.utils.resolve_shocker_id", return_value="abc123"),
@@ -122,10 +124,8 @@ class TestIntegration:
         config_with_account: Config,
     ) -> None:
         """Parse 'vibrate 3 50 --force' and verify VIBRATE operation with correct params."""
-        _current_account_id.set("pishock_1")
 
         with (
-            patch("pyshock.cli.utils.get_api", return_value=mock_api),
             patch("pyshock.cli.utils.get_config", return_value=config_with_account),
             patch("pyshock.cli.config.get_config", return_value=config_with_account),
             patch("pyshock.cli.utils.resolve_shocker_id", return_value="abc123"),
@@ -147,10 +147,8 @@ class TestIntegration:
         config_with_account: Config,
     ) -> None:
         """Parse 'beep --force' and verify operate_shocker is called with beep defaults."""
-        _current_account_id.set("pishock_1")
 
         with (
-            patch("pyshock.cli.utils.get_api", return_value=mock_api),
             patch("pyshock.cli.utils.get_config", return_value=config_with_account),
             patch("pyshock.cli.config.get_config", return_value=config_with_account),
             patch("pyshock.cli.utils.resolve_shocker_id", return_value="abc123"),
@@ -169,17 +167,12 @@ class TestIntegration:
         self,
         app: App,
         mock_api: MagicMock,
-        config_with_account: Config,
         test_shocker: Shocker,
     ) -> None:
         """Parse 'info --id abc123' and verify get_shocker_by_id is called."""
         mock_api.get_shocker_by_id.return_value = test_shocker
 
-        with (
-            patch("pyshock.cli.utils.get_api", return_value=mock_api),
-            patch("pyshock.cli.commands.shocker.get_config", return_value=config_with_account),
-            patch("pyshock.cli.commands.shocker.render_info_table"),
-        ):
+        with patch("pyshock.cli.commands.shocker.render_info_table"):
             _execute_via_parse(app, "info --id abc123", mock_api)
 
         mock_api.get_shocker_by_id.assert_called_once_with("abc123")
@@ -197,7 +190,14 @@ class TestIntegration:
         with (
             patch("pyshock.cli.commands.meta.get_config", return_value=config_with_account),
             patch("pyshock.cli.config.get_config", return_value=config_with_account),
-            patch("pyshock.cli.commands.meta.utils.get_api_for_account", return_value=mock_api),
+            patch(
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
+            ),
             patch("pyshock.cli.commands.meta.render_shocker_table_by_account"),
             patch.object(Config, "save"),
         ):
@@ -212,14 +212,19 @@ class TestIntegration:
         config_with_account: Config,
     ) -> None:
         """Parse 'verify --account pishock_1' and verify get_account is called."""
-        mock_api.get_account.return_value = AccountInfo(
-            user_id="12345", username="testuser"
-        )
+        mock_api.get_account.return_value = AccountInfo(user_id="12345", username="testuser")
 
         with (
             patch("pyshock.cli.commands.meta.get_config", return_value=config_with_account),
             patch("pyshock.cli.config.get_config", return_value=config_with_account),
-            patch("pyshock.cli.commands.meta.utils.get_api_for_account", return_value=mock_api),
+            patch(
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
+            ),
             patch("pyshock.cli.commands.meta.render_verify_panel"),
         ):
             _execute_via_parse(app, "verify --account pishock_1", mock_api)
@@ -254,9 +259,6 @@ class TestIntegration:
         mock_api: MagicMock,
     ) -> None:
         """Parse 'code add ABC123' and verify add_share_code is called."""
-        with (
-            patch("pyshock.cli.commands.code.utils.get_api", return_value=mock_api),
-        ):
-            _execute_via_parse(app, "code add ABC123", mock_api)
+        _execute_via_parse(app, "code add ABC123", mock_api)
 
         mock_api.add_share_code.assert_called_once_with("ABC123")

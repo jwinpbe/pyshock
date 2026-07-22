@@ -12,6 +12,7 @@ from pyshock.models.account import AccountInfo
 from pyshock.models.shocker import Shocker
 from pyshock.openshockapi import OpenShockAPI
 from pyshock.pishockapi import PiShockAPI
+from pyshock.providers import ProviderSpec
 
 test_account = AccountInfo(user_id="12345", username="testuser")
 
@@ -31,6 +32,15 @@ test_shocker = Shocker(
 
 PISHOCK_UUID = "550e8400-e29b-41d4-a716-446655440000"
 OPENSHOCK_TOKEN = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678901"  # 64 chars
+
+
+def _mock_providers(api_mock: MagicMock) -> dict[str, ProviderSpec]:
+    """Create a mock PROVIDERS dict for testing auth."""
+    mock_cls = MagicMock(return_value=api_mock)
+    return {
+        "pishock": ProviderSpec("PiShock", mock_cls, "api_key", 16, 15000),
+        "openshock": ProviderSpec("OpenShock", mock_cls, "api_token", 300, 65535),
+    }
 
 
 class TestAuth:
@@ -57,9 +67,7 @@ class TestAuth:
             mock.get_account.side_effect = get_account_side_effect
         else:
             mock.get_account.return_value = get_account_return
-        mock.list_shockers.return_value = (
-            list_shockers_return if list_shockers_return is not None else [test_shocker]
-        )
+        mock.list_shockers.return_value = list_shockers_return if list_shockers_return is not None else [test_shocker]
         return mock
 
     def test_new_account_with_key_flag(
@@ -73,7 +81,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch.object(Config, "save"),
         ):
             from pyshock.cli.commands.meta import auth
@@ -117,7 +125,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch.object(Config, "save"),
         ):
             from pyshock.cli.commands.meta import auth
@@ -155,20 +163,18 @@ class TestAuth:
         assert "pishock_1" in mock_err.print.call_args.args[0]
         assert "already exists" in mock_err.print.call_args.args[0]
 
-    def test_invalid_credentials_retry(
+    def test_invalid_credentials_with_key_fails_immediately(
         self,
     ) -> None:
-        """After 3 NotAuthorizedError failures, SystemExit(1) is raised."""
+        """--key with bad credentials fails immediately without retrying."""
         config = self._make_config()
-        fail_mock = self._make_api_mock(
-            get_account_side_effect=NotAuthorizedError()
-        )
+        fail_mock = self._make_api_mock(get_account_side_effect=NotAuthorizedError())
 
         with (
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.PiShockAPI", return_value=fail_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(fail_mock)),
             patch("pyshock.cli.commands.meta.console_err") as mock_err,
             pytest.raises(SystemExit) as exc_info,
         ):
@@ -177,8 +183,35 @@ class TestAuth:
             auth(key=PISHOCK_UUID)
 
         assert exc_info.value.code == 1
+        assert fail_mock.get_account.call_count == 1
+        assert mock_err.print.call_count >= 1
+        assert "Not authorized" in str(mock_err.print.call_args)
+
+    def test_invalid_credentials_interactive_retries_three_times(
+        self,
+    ) -> None:
+        """Interactive mode retries 3 times on NotAuthorizedError before failing."""
+        config = self._make_config()
+        fail_mock = self._make_api_mock(get_account_side_effect=NotAuthorizedError())
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=config),
+            patch("pyshock.cli.config.get_config", return_value=config),
+            patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=True),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(fail_mock)),
+            patch(
+                "pyshock.cli.commands.init_creds.prompt_credentials",
+                return_value=("bad_credential", "pishock"),
+            ),
+            patch("pyshock.cli.commands.meta.console_err") as mock_err,
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            from pyshock.cli.commands.meta import auth
+
+            auth()
+
+        assert exc_info.value.code == 1
         assert fail_mock.get_account.call_count == 3
-        assert mock_err.print.call_count >= 3
         assert "Failed to authorize after 3 attempts" in str(mock_err.print.call_args)
 
     def test_tty_required_for_interactive(
@@ -210,7 +243,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch.object(Config, "save"),
             patch.dict("os.environ", {"PISHOCK_API_KEY": PISHOCK_UUID}, clear=False),
         ):
@@ -233,7 +266,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.PiShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch("pyshock.cli.commands.meta.print_output") as mock_print_output,
             patch("pyshock.cli.commands.meta.render_shocker_table") as mock_render,
             patch("pyshock.cli.commands.meta.shocker_json", return_value={"shocker_id": "abc123"}),
@@ -261,7 +294,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.OpenShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch.object(Config, "save"),
         ):
             from pyshock.cli.commands.meta import auth
@@ -284,7 +317,7 @@ class TestAuth:
             patch("pyshock.cli.commands.meta.get_config", return_value=config),
             patch("pyshock.cli.config.get_config", return_value=config),
             patch("pyshock.cli.commands.meta.terminal_check.isatty", return_value=False),
-            patch("pyshock.cli.commands.meta.OpenShockAPI", return_value=api_mock),
+            patch("pyshock.cli.commands.meta.PROVIDERS", _mock_providers(api_mock)),
             patch.object(Config, "save"),
             patch.dict("os.environ", {"OPENSHOCK_API_TOKEN": OPENSHOCK_TOKEN}, clear=False),
         ):

@@ -11,12 +11,8 @@ class AccountEntry(TypedDict, total=False):
 
     provider: str  # "pishock" | "openshock"
     api_key: str  # pishock only
-    api_token: str  # openshock, limited endpoints
-    session_cookie: str  # openshock, full v1+v2 access
+    api_token: str  # openshock only
     shockers: list[dict[str, Any]]  # cached shocker dicts
-    browser_type: str  # openshock cookie auth
-    browser_cookie_path: str  # openshock cookie auth: path to Cookies DB
-    browser_key_path: str  # openshock cookie auth: path to Login Data
 
 
 @dataclass(frozen=True, kw_only=True)

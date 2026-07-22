@@ -12,7 +12,6 @@ import time
 from typing import Literal
 
 import niquests
-from niquests.utils import parse_url
 
 from pyshock.constants import (
     API_RETRY_CONFIG,
@@ -27,9 +26,7 @@ from pyshock.errors import (
     ForbiddenError,
     NotAuthorizedError,
     PermissionMissingError,
-    ShareNotFoundError,
     ShockerNotFoundError,
-    TokenAuthNotSupportedError,
 )
 from pyshock.models.account import AccountInfo
 from pyshock.models.operation import ShockerOperation
@@ -62,10 +59,8 @@ _OPENSHOCK_CONTROL_TYPES: dict[ShockerOperation, str] = {
 }
 
 _ERROR_TYPE_MAP: dict[str, type[APIError]] = {
-    "Authentication.CookieMissingOrInvalid": NotAuthorizedError,
     "Authentication.Token.Invalid": NotAuthorizedError,
     "Authorization.Token.PermissionMissing": PermissionMissingError,
-    "Share.NotFound": ShareNotFoundError,
     "Shocker.NotFound": ShockerNotFoundError,
     "Shocker.Control.NotFound": ShockerNotFoundError,
 }
@@ -160,40 +155,25 @@ def health_check(session: niquests.Session | None = None, base_url: str | None =
 
 
 class OpenShockAPI:
-    """HTTP API client for OpenShock.
-
-    Supports two authentication modes:
-    - API token: limited endpoints (no share codes)
-    - Session cookie: full v1+v2 API access including share codes
+    """API-token-authenticated HTTP client for OpenShock.
 
     Use as a context manager or call ``close()`` explicitly.
     """
 
     def __init__(
         self,
-        api_token: str | None = None,
-        session_cookie: str | None = None,
+        api_token: str,
+        *,
         base_url: str | None = None,
     ) -> None:
-        if (api_token is None) == (session_cookie is None):
-            raise ValueError("Provide exactly one of api_token or session_cookie")
+        if not api_token:
+            raise ValueError("api_token must not be empty")
 
         self._base_url = base_url or _DEFAULT_BASE_URL
-        host = parse_url(self._base_url).host
-        if host is None:
-            raise ValueError(f"Cannot extract host from {self._base_url!r}")
-        self._cookie_domain = f".{host}"
-
         self._api_token = api_token
-        self._session_cookie = session_cookie
         self._session = niquests.Session(retries=API_RETRY_CONFIG, disable_http2=True, disable_http3=True)
         self._shockers: dict[str, Shocker] | None = None
-        if api_token is not None:
-            self._session.headers.update({"OpenShockToken": api_token})
-        elif session_cookie is not None:
-            self._session.cookies.set(  # type: ignore[union-attr]
-                "openShockSession", session_cookie, domain=self._cookie_domain
-            )
+        self._session.headers.update({"OpenShockToken": api_token})
 
     def close(self) -> None:
         """Close the underlying HTTP session."""
@@ -204,11 +184,6 @@ class OpenShockAPI:
 
     def __exit__(self, *args: object) -> None:
         self.close()
-
-    @property
-    def is_cookie_auth(self) -> bool:
-        """Return True if using session cookie authentication."""
-        return self._session_cookie is not None
 
     def _parse_response(self, response: niquests.Response) -> dict | list | None:
         """Parse and unwrap an OpenShock API response.
@@ -292,40 +267,6 @@ class OpenShockAPI:
             raise _handle_openshock_error(response)
 
         return self._parse_response(response)
-
-    def link_share_code(self, code: str) -> None:
-        """Link a share code to the authenticated account.
-
-        Requires session cookie authentication.
-
-        Args:
-            code: The share code to link.
-
-        Raises:
-            TokenAuthNotSupportedError: If not using cookie auth.
-            APIError: On API errors (400=already linked, 404=not found).
-        """
-        if not self.is_cookie_auth:
-            raise TokenAuthNotSupportedError()
-        self._request("POST", f"1/shares/code/{code}")
-        self._shockers = None
-
-    def unlink_share_code(self, code: str) -> None:
-        """Unlink a share code from the authenticated account.
-
-        Requires session cookie authentication.
-
-        Args:
-            code: The share code to unlink.
-
-        Raises:
-            TokenAuthNotSupportedError: If not using cookie auth.
-            APIError: On API errors (404=not found).
-        """
-        if not self.is_cookie_auth:
-            raise TokenAuthNotSupportedError()
-        self._request("DELETE", f"1/shares/code/{code}")
-        self._shockers = None
 
     def get_account(self) -> AccountInfo:
         """Fetch the authenticated user's account info.

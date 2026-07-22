@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from json import dumps as json_dumps
 from typing import TYPE_CHECKING, Any
 
@@ -79,14 +79,16 @@ def error_json(err: BaseException) -> dict[str, str | int]:
     return out
 
 
-def shocker_json(s: Shocker, account_id: str | None = None) -> dict[str, Any]:
+def shocker_json(shocker: Shocker, account_id: str | None = None) -> dict[str, Any]:
     """Convert a Shocker to a JSON dict, dropping internal IDs."""
-    d = asdict(s)
-    for k in ("share_id", "owner_id", "client_id", "pishock_hub_id", "device_id", "shared_by", "owner_image"):
-        d.pop(k, None)
+    excluded_fields = {
+        dataclass_field.name for dataclass_field in fields(shocker) if dataclass_field.metadata.get("cli_json_exclude")
+    }
+    raw_dict = asdict(shocker)
+    result = {field_name: value for field_name, value in raw_dict.items() if field_name not in excluded_fields}
     if account_id is not None:
-        d["account_id"] = account_id
-    return d
+        result["account_id"] = account_id
+    return result
 
 
 class _Badge:

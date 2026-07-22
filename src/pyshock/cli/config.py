@@ -134,8 +134,8 @@ class Config:
 
         Args:
             account_id: Unique account identifier.
-            provider: "pishock".
-            **creds: Provider-specific credentials and optional browser metadata.
+            provider: "pishock" or "openshock".
+            **creds: Provider-specific API credentials.
         """
         accounts = self.accounts
         if account_id in accounts:
@@ -143,7 +143,7 @@ class Config:
 
         accounts[account_id] = cast(
             "AccountEntry",
-            {"provider": provider, **{k: v for k, v in creds.items() if v is not None}},
+            {"provider": provider, **{key: value for key, value in creds.items() if value is not None}},
         )
 
     def remove_account(self, account_id: str) -> None:

@@ -9,10 +9,11 @@ import pytest
 
 from pyshock.cli.config import Config
 from pyshock.cli.context import json_mode
-from pyshock.errors import NotAuthorizedError
+from pyshock.errors import CliError, NotAuthorizedError
 from pyshock.models.account import AccountInfo
 from pyshock.models.shocker import Shocker
 from pyshock.pishockapi import PiShockAPI
+from pyshock.protocols import Session
 
 test_account = AccountInfo(user_id="12345", username="testuser")
 
@@ -48,8 +49,12 @@ class TestVerify:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                return_value=mock_pishock_api,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_pishock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
             ),
             patch("pyshock.cli.commands.meta.render_verify_panel") as mock_render,
         ):
@@ -70,9 +75,7 @@ class TestVerify:
         mock_api_2 = MagicMock(spec=PiShockAPI)
         mock_api_2.__enter__ = MagicMock(return_value=mock_api_2)
         mock_api_2.__exit__ = MagicMock(return_value=False)
-        mock_api_2.get_account.return_value = AccountInfo(
-            user_id="67890", username="user2"
-        )
+        mock_api_2.get_account.return_value = AccountInfo(user_id="67890", username="user2")
 
         mock_config_with_account._data["accounts"]["pishock_2"] = {
             "provider": "pishock",
@@ -80,8 +83,12 @@ class TestVerify:
             "shockers": [],
         }
 
-        def api_side_effect(account_id: str) -> MagicMock:
-            return mock_pishock_api if account_id == "pishock_1" else mock_api_2
+        def session_side_effect(account_id: str) -> Session:
+            return Session(
+                api=mock_pishock_api if account_id == "pishock_1" else mock_api_2,
+                account_id=account_id,
+                provider="pishock",
+            )
 
         with (
             patch(
@@ -89,8 +96,8 @@ class TestVerify:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                side_effect=api_side_effect,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                side_effect=session_side_effect,
             ),
             patch("pyshock.cli.commands.meta.render_verify_panel") as mock_render,
         ):
@@ -127,8 +134,12 @@ class TestVerify:
             "shockers": [],
         }
 
-        def api_side_effect(account_id: str) -> MagicMock:
-            return mock_pishock_api if account_id == "pishock_1" else mock_api_2
+        def session_side_effect(account_id: str) -> Session:
+            return Session(
+                api=mock_pishock_api if account_id == "pishock_1" else mock_api_2,
+                account_id=account_id,
+                provider="pishock",
+            )
 
         with (
             patch(
@@ -136,8 +147,8 @@ class TestVerify:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                side_effect=api_side_effect,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                side_effect=session_side_effect,
             ),
             patch("pyshock.cli.commands.meta.render_verify_panel") as mock_render,
             patch("pyshock.cli.commands.meta.console_err") as mock_err,
@@ -149,6 +160,53 @@ class TestVerify:
         mock_render.assert_called_once_with(test_account, "pishock", "pishock_1")
         mock_err.print.assert_called_once()
         assert "pishock_2" in mock_err.print.call_args.args[0]
+
+    def test_legacy_account_does_not_block_unscoped_json_verify(
+        self,
+        mock_config_with_account: Config,
+        mock_pishock_api: MagicMock,
+    ) -> None:
+        mock_pishock_api.get_account.return_value = test_account
+        mock_config_with_account._data["accounts"]["openshock_1"] = {
+            "provider": "openshock",
+        }
+
+        def session_side_effect(account_id: str) -> Session:
+            if account_id == "openshock_1":
+                raise CliError("OpenShock account requires an API token")
+            return Session(
+                api=mock_pishock_api,
+                account_id=account_id,
+                provider="pishock",
+            )
+
+        with (
+            patch("pyshock.cli.commands.meta.get_config", return_value=mock_config_with_account),
+            patch(
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                side_effect=session_side_effect,
+            ),
+            patch("pyshock.cli.commands.meta.print_output") as mock_print_output,
+        ):
+            from pyshock.cli.commands.meta import verify
+
+            json_mode.set(True)
+            verify()
+
+        assert mock_print_output.call_args.args[0] == [
+            {
+                "ok": True,
+                "account_id": "pishock_1",
+                "provider": "pishock",
+                "username": "testuser",
+                "user_id": "12345",
+            },
+            {
+                "ok": False,
+                "account_id": "openshock_1",
+                "error": "OpenShock account requires an API token",
+            },
+        ]
 
     def test_account_not_found(
         self,
@@ -185,8 +243,12 @@ class TestVerify:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                return_value=mock_pishock_api,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_pishock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
             ),
             patch("pyshock.cli.commands.meta.render_verify_panel") as mock_render,
             patch("pyshock.cli.commands.meta.print_output") as mock_print_output,
@@ -222,8 +284,12 @@ class TestDevices:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                return_value=mock_pishock_api,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_pishock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
             ),
             patch("pyshock.cli.commands.meta.render_shocker_table_by_account") as mock_render,
             patch.object(Config, "save"),
@@ -252,8 +318,12 @@ class TestDevices:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                return_value=mock_pishock_api,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_pishock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
             ),
             patch("pyshock.cli.commands.meta.console") as mock_console,
             patch.object(Config, "save"),
@@ -278,8 +348,12 @@ class TestDevices:
                 return_value=mock_config_with_account,
             ),
             patch(
-                "pyshock.cli.commands.meta.utils.get_api_for_account",
-                return_value=mock_pishock_api,
+                "pyshock.cli.commands.meta.utils.get_session_for_account",
+                return_value=Session(
+                    api=mock_pishock_api,
+                    account_id="pishock_1",
+                    provider="pishock",
+                ),
             ),
             patch("pyshock.cli.commands.meta.print_output") as mock_print_output,
             patch("pyshock.cli.commands.meta.render_shocker_table_by_account") as mock_render,
@@ -318,9 +392,7 @@ class TestLogout:
             logout(account_id="pishock_1")
 
         assert "pishock_1" not in mock_config_with_account.accounts
-        mock_console.print.assert_any_call(
-            "[green]Account [bold]pishock_1[/bold] removed.[/green]"
-        )
+        mock_console.print.assert_any_call("[green]Account [bold]pishock_1[/bold] removed.[/green]")
 
     def test_no_accounts(
         self,
@@ -383,9 +455,7 @@ class TestLogout:
             logout(account_id="nonexistent")
 
         assert "pishock_1" in mock_config_with_account.accounts
-        mock_console.print.assert_called_with(
-            "[green]Account [bold]nonexistent[/bold] removed.[/green]"
-        )
+        mock_console.print.assert_called_with("[green]Account [bold]nonexistent[/bold] removed.[/green]")
 
 
 class TestConfirm:
@@ -401,9 +471,7 @@ class TestConfirm:
                 "pyshock.cli.commands.meta.get_config",
                 return_value=mock_config_with_account,
             ),
-            patch(
-                "pyshock.cli.commands.meta.render_confirmation_panel"
-            ) as mock_render,
+            patch("pyshock.cli.commands.meta.render_confirmation_panel") as mock_render,
         ):
             from pyshock.cli.commands.meta import confirm
 
@@ -433,9 +501,7 @@ class TestConfirm:
             confirm("shock")
 
         assert mock_config_with_account.confirmation_enabled("shock") is True
-        mock_console.print.assert_called_with(
-            "Confirmation for [bold]shock[/bold] is now [bold]enabled[/bold]."
-        )
+        mock_console.print.assert_called_with("Confirmation for [bold]shock[/bold] is now [bold]enabled[/bold].")
 
     def test_toggle_vibrate(
         self,
@@ -456,9 +522,7 @@ class TestConfirm:
             confirm("vibrate")
 
         assert mock_config_with_account.confirmation_enabled("vibrate") is True
-        mock_console.print.assert_called_with(
-            "Confirmation for [bold]vibrate[/bold] is now [bold]enabled[/bold]."
-        )
+        mock_console.print.assert_called_with("Confirmation for [bold]vibrate[/bold] is now [bold]enabled[/bold].")
 
     def test_unknown_operation(
         self,

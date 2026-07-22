@@ -70,6 +70,7 @@ pyshock auth --key KEY
 ```
 
 PyShock stores credentials in your user configuration folder. Refresh with `pyshock devices`.
+PiShock `code` commands operate on the selected account. Use `--account` to change it.
 
 Be advised, your API key will be stored in plain text. 
 
@@ -111,7 +112,8 @@ with PiShockAPI(api_key="key") as api:
 ```python
 from pyshock import OpenShockAPI, ShockerOperation
 
-# Token authentication (limited endpoints)
+# Create a token at https://openshock.app/settings/api-tokens.
+# Control operations require the shockers.use permission.
 with OpenShockAPI(api_token="token") as api:
     for shocker in api.list_shockers():
         print(shocker.name, shocker.shocker_id)
@@ -121,20 +123,11 @@ with OpenShockAPI(api_token="token") as api:
             duration=2000,
             intensity=50,
         )
-
-# Cookie authentication (account and supported sharing endpoints)
-from http.cookiejar import MozillaCookieJar
-
-jar = MozillaCookieJar("cookies.txt")
-jar.load(ignore_discard=True, ignore_expires=True)
-cookie = jar["openShockSession"].value
-
-with OpenShockAPI(session_cookie=cookie) as api:
-    account = api.get_account()
-    print(account.username)
-
-    api.link_share_code("01234567-89ab-cdef-0123-456789abcdef")
 ```
+
+OpenShock authentication uses the dedicated `OpenShockToken` API-token header. PyShock does not support browser
+session cookies. Redeem and manage legacy share codes in the OpenShock web interface. `list_shockers()` returns
+those shockers with your API token. PyShock does not support anonymous public share links.
 
 #### Operations:
 `ShockerOperation.SHOCK`, `VIBRATE`, `BEEP`. Duration in milliseconds **(300-65535)**, intensity **0-100**.

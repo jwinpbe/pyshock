@@ -67,34 +67,23 @@ class TestResolveAccount:
                 utils.resolve_account()
 
 
-class TestGetApiForAccount:
+class TestGetSessionForAccount:
     def test_get_pishock_api(self) -> None:
         config = _mock_config_with_accounts()
         with patch("pyshock.cli.utils.get_config", return_value=config):
-            api = utils.get_api_for_account("pishock_1")
+            session = utils.get_session_for_account("pishock_1")
         from pyshock.pishockapi import PiShockAPI
 
-        assert isinstance(api, PiShockAPI)
-        api.close()
+        assert isinstance(session.api, PiShockAPI)
+        assert session.provider == "pishock"
+        assert session.account_id == "pishock_1"
+        session.api.close()
 
     def test_get_missing_account_raises(self) -> None:
         config = Config()
         with patch("pyshock.cli.utils.get_config", return_value=config):
             with pytest.raises(CliError, match="not found"):
-                utils.get_api_for_account("nonexistent")
-
-
-class TestSetApiClientForAccount:
-    def test_set_api_client_for_account(self) -> None:
-        config = _mock_config_with_accounts()
-        with patch("pyshock.cli.utils.get_config", return_value=config):
-            client = utils.get_api_for_account("pishock_1")
-            utils.set_api_client(client)
-            api = utils.get_api()
-        from pyshock.pishockapi import PiShockAPI
-
-        assert isinstance(api, PiShockAPI)
-        api.close()
+                utils.get_session_for_account("nonexistent")
 
 
 class TestConfirmOperation:

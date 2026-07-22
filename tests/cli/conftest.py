@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from pyshock.models.shocker import Shocker
 
 from pyshock.cli.config import Config
-from pyshock.cli.context import _current_account_id, json_mode
+from pyshock.cli.context import json_mode
 from pyshock.pishockapi import PiShockAPI
 
 
@@ -107,23 +107,18 @@ def assert_parse_args(app: App) -> Callable[..., tuple]:
 
         if command is not expected_command:
             raise AssertionError(
-                f"Expected command {expected_command.__name__!r}, "
-                f"got {getattr(command, '__name__', command)!r}"
+                f"Expected command {expected_command.__name__!r}, got {getattr(command, '__name__', command)!r}"
             )
 
         if expected_args is not None:
             actual_args = tuple(bound.args)
             if actual_args != tuple(expected_args):
-                raise AssertionError(
-                    f"Expected args {expected_args!r}, got {actual_args!r}"
-                )
+                raise AssertionError(f"Expected args {expected_args!r}, got {actual_args!r}")
 
         if expected_kwargs is not None:
             actual_kwargs = dict(bound.kwargs)
             if actual_kwargs != expected_kwargs:
-                raise AssertionError(
-                    f"Expected kwargs {expected_kwargs!r}, got {actual_kwargs!r}"
-                )
+                raise AssertionError(f"Expected kwargs {expected_kwargs!r}, got {actual_kwargs!r}")
 
         return command, bound, ignored
 
@@ -216,11 +211,9 @@ def _reset_context_vars() -> Generator[None]:
     from pyshock.cli.config import reset_config_cache
 
     json_mode.set(False)
-    _current_account_id.set("")
     reset_config_cache()
     yield
     json_mode.set(False)
-    _current_account_id.set("")
     reset_config_cache()
 
 

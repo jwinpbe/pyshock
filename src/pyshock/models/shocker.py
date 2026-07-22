@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from pyshock.constants import OPENSHOCK_MAX_DURATION_MS
+
+
+def _omit_from_json(default: Any = None):  # ruff:ignore[missing-return-type-private-function]
+    """Field excluded from CLI JSON output."""
+    return field(metadata={"cli_json_exclude": True}, default=default)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -21,19 +27,19 @@ class Shocker:
     can_hold: bool
     max_intensity: int
     max_duration: int
-    pishock_hub_id: int | None = None
-    device_id: str | None = None
+    pishock_hub_id: int | None = _omit_from_json()
+    device_id: str | None = _omit_from_json()
     share_code: str | None = None
     owned_by: str | None = None
     locked: bool = False
     paused: bool = False
     share_paused: bool = False
     can_log: bool = False
-    share_id: int | None = None
-    owner_id: int | None = None
-    client_id: int | None = None
-    shared_by: str | None = None
-    owner_image: str | None = None
+    share_id: int | None = _omit_from_json()
+    owner_id: int | None = _omit_from_json()
+    client_id: int | None = _omit_from_json()
+    shared_by: str | None = _omit_from_json()
+    owner_image: str | None = _omit_from_json()
     model: str | None = None
     rf_id: int | None = None
     created_on: str | None = None
@@ -55,7 +61,10 @@ class Shocker:
         return self.share_code is not None or self.shared_by is not None
 
     def __repr__(self) -> str:
-        return f"Shocker({self.name!r}, id={self.shocker_id!r})"
+        extra = ""
+        if self.is_shared:
+            extra = f", shared_by={self.shared_by!r}"
+        return f"Shocker({self.name!r}, id={self.shocker_id!r}{extra})"
 
     def __str__(self) -> str:
         if self.is_shared:

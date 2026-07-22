@@ -55,8 +55,8 @@ def _truncate(text: str, limit: int = 512) -> str:
     return text[:limit] + "..."
 
 
-def _merge_shockers(shared: Shocker, owned: Shocker) -> Shocker:
-    """Retain share policy while adding metadata absent from the share response."""
+def _apply_owned_fields(shared: Shocker, owned: Shocker) -> Shocker:
+    """Copy identifying metadata from the owned record onto the shared record."""
     return replace(
         shared,
         name=owned.name,
@@ -296,6 +296,10 @@ Response received:
             raise APIError(message="Unexpected response from Shockers endpoint")
         if not isinstance(shared_data, list):
             raise APIError(message="Unexpected response from Share/GetShared endpoint")
+        if not all(isinstance(item, dict) for item in claimed_data):
+            raise APIError(message="Unexpected response from Shockers endpoint")
+        if not all(isinstance(item, dict) for item in shared_data):
+            raise APIError(message="Unexpected response from Share/GetShared endpoint")
 
         claimed = {s.shocker_id: s for s in (Shocker.from_api(item) for item in claimed_data)}
 
@@ -303,7 +307,7 @@ Response received:
             shared = Shocker.from_api(item)
             if shared.shocker_id in claimed:
                 base = claimed[shared.shocker_id]
-                claimed[shared.shocker_id] = _merge_shockers(shared, base)
+                claimed[shared.shocker_id] = _apply_owned_fields(shared, base)
             else:
                 # Shared shocker not in claimed -- currently not possible but this is defensive
                 claimed[shared.shocker_id] = shared

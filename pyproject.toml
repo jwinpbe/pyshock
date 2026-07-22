@@ -1,6 +1,6 @@
 [project]
 name = "pyshock"
-version = "0.2.0"
+version = "0.3.0"
 description = "An up to date implementation of the PiShock and OpenShock APIs in Python. Includes functionality as a library and as a command line program."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
@@ -88,19 +88,20 @@ select = [
   "ARG",
   "FBT",
   "RET",
-  "PLR0913",
-  "PLR0915",
-  "PLR1711",
-  "PLR1733",
-  "PLR1736",
-  "PLR2004",
+  "too-many-arguments",
+  "too-many-statements",
+  "useless-return",
+  "unnecessary-dict-index-lookup",
+  "unnecessary-list-index-lookup",
+  "magic-value-comparison",
   "FURB",
 ]
-ignore = ["ANN002", "ANN003", "ANN401"]
+ignore = ["missing-type-args", "missing-type-kwargs", "any-type"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/pyshock/__init__.py" = ["RUF067"]
-"tests/*" = ["ANN", "S", "B", "SIM", "PLR2004", "TC001", "TC003", "PLR0913", "BLE001", "ARG005", "FBT"]
+"src/pyshock/__init__.py" = ["non-empty-init-module"]
+"src/pyshock/cli/__main__.py" = ["print"]
+"tests/*" = ["ANN", "S", "B", "SIM", "magic-value-comparison", "typing-only-first-party-import", "typing-only-standard-library-import", "too-many-arguments", "blind-except", "unused-lambda-argument", "FBT"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

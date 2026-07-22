@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.0] - 2026-07-21
+
+### Breaking changes
+
+- `OpenShockAPI` requires `api_token`. Session-cookie authentication is gone, along with
+  `link_share_code()` and `unlink_share_code()`.
+- Removed `SessionOnlyError` and `TokenAuthNotSupportedError`.
+- Removed OpenShock share-code management from the CLI. `code add`, `code delete`, and `code list` are PiShock-only.
+- `code list` uses the selected PiShock account. Use the global `--account` flag to change it.
+- Removed `_current_account_id` and `_current_api_client` contextvars. All CLI commands take an explicit
+  `session` parameter.
+- `get_api_for_account` is `get_session_for_account` and returns a `Session`. Removed `get_api` and
+  `set_api_client`.
+- `prepare_api_session` is `build_session`.
+- `validate_operation_params` is `validate_duration`. Intensity bounds are cyclopts type constraints now.
+
+### Added
+
+- `_omit_from_json()` helper marks `Shocker` dataclass fields with `cli_json_exclude`
+  metadata. `shocker_json()` filters on that metadata instead of a hardcoded exclude list.
+- `_apply_owned_fields()` replaces `_merge_shockers`. Runtime type checks on `claimed_data`
+  and `shared_data` before parsing.
+- `protocols.py` with a `ShockerClient` Protocol and `Session` dataclass, exported via `__all__`.
+- `providers.py` with a `PROVIDERS` dispatch table and `ProviderSpec`.
+- `constants.py` holds provider duration limits.
+- `Shocker.__repr__` includes `shared_by` when the shocker is shared.
+- Test for unsupported operation values in `OpenShockAPI.operate_shocker`.
+
 ## [0.2.0] - 2026-07-18
 
 ### Breaking changes

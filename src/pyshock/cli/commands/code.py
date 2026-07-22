@@ -1,55 +1,53 @@
 """Share code commands for PyShock CLI (add, delete, list)."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from cyclopts import Parameter
 
-from pyshock.cli import share_code, utils
-from pyshock.cli.config import get_config
+from pyshock.cli import share_code
 from pyshock.cli.context import json_mode
 from pyshock.cli.display import console, print_output, shocker_json
-
-if TYPE_CHECKING:
-    from pyshock.models.shocker import Shocker
-
-
-def add(code: str) -> None:
-    """Add a share code."""
-    api = utils.get_api()
-    share_code.code_add(code, api)
+from pyshock.errors import CliError
+from pyshock.pishockapi import PiShockAPI
+from pyshock.protocols import Session
 
 
-def delete(code: str) -> None:
-    """Delete a share code."""
-    api = utils.get_api()
-    share_code.code_delete(code, api)
+def _get_pishock_api(session: Session) -> PiShockAPI:
+    """Keep provider policy at the boundary of the PiShock-only command group."""
+    if not isinstance(session.api, PiShockAPI):
+        raise CliError("Manage OpenShock share codes in the OpenShock web interface.")
+    return session.api
+
+
+def add(
+    code: str,
+    *,
+    session: Annotated[Session, Parameter(parse=False)],
+) -> None:
+    """Add a PiShock share code."""
+    share_code.code_add(code, _get_pishock_api(session))
+
+
+def delete(
+    code: str,
+    *,
+    session: Annotated[Session, Parameter(parse=False)],
+) -> None:
+    """Delete a PiShock share code."""
+    share_code.code_delete(code, _get_pishock_api(session))
 
 
 def list_codes(
     *,
     show_info: bool = False,
-    account_id: Annotated[str | None, Parameter(name="account")] = None,
+    session: Annotated[Session, Parameter(parse=False)],
 ) -> None:
-    """List share codes."""
-    config = get_config()
-    collected: list[tuple[str, Shocker]] = []
-
-    accounts = [account_id] if account_id else config.accounts
-    for acct_id in accounts:
-        api = utils.get_api_for_account(acct_id)
-        with api, console.status(f"Querying [bold]{acct_id}[/bold]...", spinner="bouncingBar"):
-            shocker_list = api.list_shockers()
-        collected.extend((acct_id, s) for s in shocker_list if s.is_shared)
+    """List share codes for the selected PiShock account."""
+    api = _get_pishock_api(session)
+    with console.status("Querying PiShock...", spinner="bouncingBar"):
+        shared = [shocker for shocker in api.list_shockers() if shocker.is_shared]
 
     if json_mode.get():
-        print_output([shocker_json(s, account_id=acct_id) for acct_id, s in collected])
+        print_output([shocker_json(shocker) for shocker in shared])
     else:
-        by_account: dict[str, list[Shocker]] = {}
-        for acct_id, s in collected:
-            by_account.setdefault(acct_id, []).append(s)
-        for acct_id, shared in by_account.items():
-            console.print()
-            console.print(f"[bold]{acct_id}[/bold]")
-            share_code.code_list(show_info=show_info, shockers=shared)
+        share_code.code_list(show_info=show_info, shockers=shared)

@@ -47,18 +47,16 @@ class TestConfigLoad:
     def test_load_valid_new_format(self, tmp_path: Path) -> None:
         config_path = tmp_path / "config.json"
         config_path.write_text(
-            json.dumps(
-                {
-                    "accounts": {
-                        "pishock_1": {
-                            "provider": "pishock",
-                            "api_key": "key123",
-                            "shockers": [{"shocker_id": "abc-123", "name": "Test"}],
-                        }
-                    },
-                    "default_shocker_id": "abc-123",
-                }
-            )
+            json.dumps({
+                "accounts": {
+                    "pishock_1": {
+                        "provider": "pishock",
+                        "api_key": "key123",
+                        "shockers": [{"shocker_id": "abc-123", "name": "Test"}],
+                    }
+                },
+                "default_shocker_id": "abc-123",
+            })
         )
         config = Config()
         config._path = config_path
@@ -72,25 +70,23 @@ class TestConfigLoad:
     def test_load_rebuilds_shocker_index(self, tmp_path: Path) -> None:
         config_path = tmp_path / "config.json"
         config_path.write_text(
-            json.dumps(
-                {
-                    "accounts": {
-                        "pishock_1": {
-                            "provider": "pishock",
-                            "api_key": "key123",
-                            "shockers": [
-                                {"shocker_id": "s1", "name": "A"},
-                                {"shocker_id": "s2", "name": "B"},
-                            ],
-                        },
-                        "openshock_1": {
-                            "provider": "openshock",
-                            "api_token": "tok",
-                            "shockers": [{"shocker_id": "s3", "name": "C"}],
-                        },
-                    }
+            json.dumps({
+                "accounts": {
+                    "pishock_1": {
+                        "provider": "pishock",
+                        "api_key": "key123",
+                        "shockers": [
+                            {"shocker_id": "s1", "name": "A"},
+                            {"shocker_id": "s2", "name": "B"},
+                        ],
+                    },
+                    "openshock_1": {
+                        "provider": "openshock",
+                        "api_token": "tok",
+                        "shockers": [{"shocker_id": "s3", "name": "C"}],
+                    },
                 }
-            )
+            })
         )
         config = Config()
         config._path = config_path
@@ -100,17 +96,15 @@ class TestConfigLoad:
     def test_load_clears_stale_default(self, tmp_path: Path) -> None:
         config_path = tmp_path / "config.json"
         config_path.write_text(
-            json.dumps(
-                {
-                    "accounts": {
-                        "pishock_1": {
-                            "provider": "pishock",
-                            "shockers": [{"shocker_id": "s1", "name": "A"}],
-                        }
-                    },
-                    "default_shocker_id": "nonexistent",
-                }
-            )
+            json.dumps({
+                "accounts": {
+                    "pishock_1": {
+                        "provider": "pishock",
+                        "shockers": [{"shocker_id": "s1", "name": "A"}],
+                    }
+                },
+                "default_shocker_id": "nonexistent",
+            })
         )
         config = Config()
         config._path = config_path
@@ -211,19 +205,6 @@ class TestMultiAccount:
         assert account["provider"] == "openshock"
         assert account["api_token"] == "tok123"
 
-    def test_add_account_openshock_cookie(self) -> None:
-        config = Config()
-        config.add_account(
-            "openshock_1",
-            "openshock",
-            session_cookie="cookie123",
-            browser_type="firefox",
-        )
-        account = config.get_account("openshock_1")
-        assert account is not None
-        assert account["session_cookie"] == "cookie123"
-        assert account["browser_type"] == "firefox"
-
     def test_add_account_duplicate_raises(self) -> None:
         config = Config()
         config.add_account("pishock_1", "pishock", api_key="key123")
@@ -236,13 +217,11 @@ class TestMultiAccount:
             "openshock_1",
             "openshock",
             api_token="tok",
-            browser_type=None,
-            browser_cookie_path=None,
+            shockers=None,
         )
         account = config.get_account("openshock_1")
         assert account is not None
-        assert "browser_type" not in account
-        assert "browser_cookie_path" not in account
+        assert "shockers" not in account
 
     def test_remove_account(self) -> None:
         config = Config()
@@ -341,17 +320,15 @@ class TestGetConfig:
     def test_reset_forces_reload(self, tmp_path: Path) -> None:
         config_path = tmp_path / "config.json"
         config_path.write_text(
-            json.dumps(
-                {
-                    "accounts": {
-                        "pishock_1": {
-                            "provider": "pishock",
-                            "api_key": "key123",
-                            "shockers": [],
-                        }
+            json.dumps({
+                "accounts": {
+                    "pishock_1": {
+                        "provider": "pishock",
+                        "api_key": "key123",
+                        "shockers": [],
                     }
                 }
-            )
+            })
         )
 
         config = Config()
