@@ -147,7 +147,7 @@ def health_check(session: niquests.Session | None = None, base_url: str | None =
         if session is not None:
             resp = session.request("GET", url, timeout=TIMEOUT_SECONDS)
         else:
-            with niquests.Session(disable_http2=True, disable_http3=True) as session:
+            with niquests.Session() as session:
                 resp = session.request("GET", url, timeout=TIMEOUT_SECONDS)
         return resp.status_code in (200, 204)
     except niquests.RequestException:
@@ -171,7 +171,7 @@ class OpenShockAPI:
 
         self._base_url = base_url or _DEFAULT_BASE_URL
         self._api_token = api_token
-        self._session = niquests.Session(retries=API_RETRY_CONFIG, disable_http2=True, disable_http3=True)
+        self._session = niquests.Session(retries=API_RETRY_CONFIG)
         self._shockers: dict[str, Shocker] | None = None
         self._session.headers.update({"OpenShockToken": api_token})
 

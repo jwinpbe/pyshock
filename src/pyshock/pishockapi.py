@@ -144,7 +144,7 @@ def health_check(session: niquests.Session | None = None) -> bool:
         if session is not None:
             resp = session.request("GET", f"{BASE_URL}/Health", timeout=TIMEOUT_SECONDS)
         else:
-            with niquests.Session(disable_http2=True, disable_http3=True) as session:
+            with niquests.Session() as session:
                 resp = session.request("GET", f"{BASE_URL}/Health", timeout=TIMEOUT_SECONDS)
         return resp.status_code in (200, 204)
     except niquests.RequestException:
@@ -159,7 +159,7 @@ class PiShockAPI:
 
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
-        self._session = niquests.Session(retries=API_RETRY_CONFIG, disable_http2=True, disable_http3=True)
+        self._session = niquests.Session(retries=API_RETRY_CONFIG)
         self._session.headers.update({
             "X-PiShock-Api-Key": api_key,
         })

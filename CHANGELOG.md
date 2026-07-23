@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2026-07-23
+
+### Fixed
+
+- Removed `disable_http2=True, disable_http3=True` from all
+  `niquests.Session` constructors and updated dependencies
+
 ## [0.3.0] - 2026-07-21
 
 ### Breaking changes
